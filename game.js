@@ -160,6 +160,7 @@ function updateHull() {
 }
 /** Start a fresh fixed-mode run while retaining pilot, scores and sound preference. */
 function start() {
+  checkpoint.clear(); // Abandon the old shift even if saving the fresh one fails.
   lastScoreId = null; release(); run = new Run(W,Math.random,selectedDifficulty); mode = 'playing'; particles = []; fx.clear(); audio.setRealm('ship'); shake = 0; flash = 0; accumulator = 0; damageTime = 0;
   updateHealth(); write('hit-feedback','hidden',true);
   setOverlay(null); $('pause').disabled = false; setPauseIcon(false);
@@ -205,7 +206,8 @@ function takeHit(event) {
   fx.impact(run.player.x,run.player.y);audio.cue('hit');
   if(event.health===1)audio.scream();
 }
-$('start').addEventListener('click',start); $('restart').addEventListener('click',start);
+// Every deliberate new run replaces the active checkpoint without posting an abandoned score.
+for(const id of ['start','restart','pause-restart'])$(id).addEventListener('click',start);
 $('pause').addEventListener('click',pause); $('resume').addEventListener('click',pause);
 $('back').addEventListener('click',() => { checkpoint.clear(); mode = 'ready'; run = null; release(); particles = []; fx.clear(); audio.setRealm('ship'); setOverlay('intro'); write('distance','textContent','0000'); write('salvage','textContent','00'); write('sector','textContent','Personnel deck'); speak('start'); $('start').focus({preventScroll:true}); });
 function renderRecords() {
@@ -290,12 +292,13 @@ window.addEventListener('keydown', e => {
   if (isEditing(e.target)) return;
   if (frame.classList.contains('show-records')) { if (e.code === 'Escape') closeRecords(); return; }
   if (['Space','ArrowUp','KeyW'].includes(e.code)) {
+    // Space matches touch/click; Up/W give lift only, and X gives fire only.
     // The game's flight binding wins over a previously focused HUD button.
     // Editable fields and the records menu retain ordinary keyboard behavior.
     e.preventDefault(); e.stopPropagation(); if(e.repeat) return;
     if (mode === 'ready' || mode === 'dead') start();
     else if(mode === 'paused') pause();
-    if(mode === 'playing') { keys.add(e.code); syncHeld(); fireWeapon(); if(sound && !audio.running) initAudio(); }
+    if(mode === 'playing') { keys.add(e.code); syncHeld(); if(e.code==='Space')fireWeapon(); if(sound && !audio.running) initAudio(); }
     return;
   }
   if ((e.code === 'Escape' || e.code === 'KeyP') && !e.repeat) pause();

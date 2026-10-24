@@ -57,20 +57,23 @@ that probably passed inspection in another dimension.
 
 | Action | Touch / mouse | Keyboard |
 | :--- | :--- | :--- |
-| Start, restart, or resume | Tap **Play**, **Again**, or **Resume** | Press **Space**, **↑**, or **W** |
-| Fly upward | Hold the **Fly** pad or the flight area | Hold **Space**, **↑**, or **W** |
+| Start or resume | Tap **Play**, **Again**, or **Resume** | Press **Space**, **↑**, or **W** |
+| Fly and fire | Hold / tap the **Fly** pad or flight area | Hold **Space**; each new press fires |
+| Fly without firing | — | Hold **↑** or **W** |
 | Fall | Release | Release the flight key |
-| Fire | Tap / click the **Fly** pad or flight area | Tap **X**, or press a flight key |
+| Fire | Tap / click the **Fly** pad or flight area | Tap **X** |
+| Restart a paused run | Pause, then tap **Restart** | **Tab** to **Restart**, then **Enter** |
 | Pause / resume | Tap the pause button / **Resume** | Press **P** or **Esc** |
 | Music & sound | Tap the speaker button | Focus the speaker button with **Tab**, then press **Enter** |
 | Fullscreen | Tap the fullscreen button, when available | Focus it with **Tab**, then press **Enter** |
 | Pilot name & scores | Tap your name / **Scores**; enter a name and tap **Done** | **Tab** through the form; **Enter** saves; **Esc** closes Scores |
 
-Each new flight press also fires a shot. Holding keeps you climbing; it doesn't
-keep firing. On desktop, **X** lets you shoot without changing your flight.
+Each touch or mouse press also fires a shot. Holding keeps you climbing; it doesn't
+keep firing. **Space** behaves the same way. **↑** and **W** fly without shooting or spending ammo;
+**X** fires without changing your flight.
 
 Use **Tab** and **Enter** for menu buttons. When the **Fly** button itself has
-keyboard focus, holding **Enter** also flies. Name entry keeps normal typing.
+keyboard focus, holding **Enter** also flies and fires once on press. Name entry keeps normal typing.
 
 ## Surviving your shift
 
@@ -119,7 +122,9 @@ whether this was the approved route.
   Your name and top five runs in each mode stay in that browser; there is no shared leaderboard.
 - **Leave a shift, come back to it.** Pausing or switching away saves your active run.
   Reopening returns to the pause screen with your gear, health and progress intact;
-  tap **Resume** when ready. Flight also saves every three seconds as a fallback.
+  tap **Resume** when ready, or **Restart** to begin a fresh shift in the same mode.
+  Restart replaces the saved run and keeps your name, scores and sound preference.
+  Flight also saves every three seconds as a fallback.
   Saves stay on that device and site; clearing browser data removes them.
 - **Take it offline.** After an online visit has finished loading, the game can
   reopen offline in a compatible browser. Add it to your Home Screen where supported;
