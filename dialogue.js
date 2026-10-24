@@ -57,7 +57,9 @@ const exchanges = {
   ],
   gear: [
     [moss('New toy. Safety is a state of mind.'), siv('Keep it pointed away from your organs.')],
-    [pip('This one has a warranty.'), siv('It is written on tape.')]
+    [pip('This one has a warranty.'), siv('It is written on tape.')],
+    [pip('The ammunition is looking at me.'), moss('Emotional support moon. Do not get attached. It eats engines.')],
+    [moss('Ten shots of pure bureaucracy. Fucking weaponised middle management.'), siv('At last. A practical application.')]
   ],
   warning: [
     [moss('Top half: floaty. Bottom half: money. Miss it: same shit.'), pip('I would like the same shit, please.')],

@@ -1,4 +1,4 @@
-const CACHE = 'exp3ndable-v11';
+const CACHE = 'exp3ndable-v12';
 const FILES = ['./', './index.html', './style.css', './game.js', './engine.js', './arsenal.js', './audio.js', './fx.js', './records.js', './dialogue.js', './art.js', './icon.svg', './manifest.webmanifest'];
 self.addEventListener('install', event => { event.waitUntil(caches.open(CACHE).then(cache => cache.addAll(FILES.map(file => new Request(file, { cache:'reload' })))).then(() => self.skipWaiting())); });
 self.addEventListener('activate', event => {

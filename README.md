@@ -29,10 +29,13 @@ that probably passed inspection in another dimension.
 - **Portals are optional.** Fly through to travel, or go above or below to keep
   your current surroundings. The upper half gives low gravity; the lower half
   doubles salvage for a short time.
-- **Three weapons. Unlimited ammunition.** Start with an ion rifle, find the
-  harder-hitting pulse driver, or spread your shots with the fork emitter.
-- **One extremely borrowed shuttle.** Three hull points, its own weapon, and a
-  spectacular breakup. When it falls apart, you keep flying with your crew health.
+- **Five very bad ideas.** Fast ion bolts, Grav-pop bubbles, chaining Arc fork
+  electricity, a 12-shot biting Pet Moon, or ten rounds of Red Tape. Empty special
+  weapons hand you back the rifle. The paperwork says DENIED. It means it.
+- **One extremely borrowed shuttle.** Three hull points and a spectacular breakup.
+  Pickups mount stronger weapons: twin orbs, five-target lightning, paired moons,
+  or a bigger stamp. One tap spends one charge; ejection keeps the rest and your
+  crew health.
 - **Mistakes are recoverable.** Three health points, medical pickups, a brief
   recovery shield, and a pace that eases up to a ceiling.
 - **A crew with opinions.** Anxious Pip, deadpan Siv, and recklessly scientific
@@ -69,10 +72,10 @@ are immune to your gunfire. Fly into them to collect or enter them.
 **A hit isn't the end.** On foot, it costs one health point, a quarter of your
 salvage rounded up, and your weapon. The brief shield gives you time to recover.
 Medical packets restore one health point, up to three. Shuttle hits use hull
-instead, protecting your health, salvage, and carried weapon.
+instead, protecting your health, salvage, carried weapon, and remaining charges.
 
-**Read the room.** Some hazards can be shot apart; solid bulkheads can't. You can
-stay in a world you like by flying around the next portal. Nobody is checking
+**Read the room.** Regular fire cannot clear solid bulkheads. A moon or Red Tape
+has other ideas. You can stay in a world you like by flying around the next portal. Nobody is checking
 whether this was the approved route.
 
 ## Make yourself comfortable

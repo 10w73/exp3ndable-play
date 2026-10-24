@@ -1,4 +1,5 @@
 import {blastKind} from './fx.js';
+import {WEAPONS} from './arsenal.js';
 const midi = note => 440 * 2 ** ((note - 69) / 12);
 const ROOTS = [50, 50, 53, 53, 48, 48, 55, 57];
 const RIFF = [12, null, 7, 10, 12, 15, 10, 7];
@@ -10,14 +11,6 @@ const THEMES={
   aquarium:{shift:2,riff:[19,14,null,12,7,null,10,14],lead:'sine',leadGain:.15,bass:'sine',bassGain:.12,kick:.13,hat:.35},
   scrapyard:{shift:-3,riff:[7,null,12,10,null,7,3,10],lead:'triangle',leadGain:.14,bass:'triangle',bassGain:.1,kick:.16,hat:.65}
 };
-
-// Each equipped weapon selects its own voice; no shared generic shot sound.
-export const WEAPON_SOUNDS = Object.freeze({
-  ion: Object.freeze({ frequency: 1160, end: 680, duration: .14, wave: 'triangle', volume: .27 }),
-  pulse: Object.freeze({ frequency: 540, end: 230, duration: .18, wave: 'sine', volume: .18 }),
-  fork: Object.freeze({ frequency: 1740, end: 1050, duration: .1, wave: 'triangle', volume: .23 }),
-  shuttle: Object.freeze({ frequency: 720, end: 360, duration: .13, wave: 'sine', volume: .18 })
-});
 
 // All audio is synthesized locally. Resume from a real gesture before scheduling
 // anything: mobile browsers may otherwise consume short sounds while suspended.
@@ -155,11 +148,30 @@ export class GameAudio {
     if (!this.running || this.mode === 'paused') return;
     this.tone(freq, duration, type, Math.min(.28, volume * 2.8), this.context.currentTime + .01, this.effects, end);
   }
-  weapon(kind = 'ion') {
-    if (!this.running || this.mode === 'paused' || !WEAPON_SOUNDS[kind]) return false;
-    const voice = WEAPON_SOUNDS[kind];
-    this.tone(voice.frequency, voice.duration, voice.wave, voice.volume,
-      this.context.currentTime + .005, this.weapons, voice.end);
+  weapon(kind = 'ion', upgraded = false) {
+    if (!this.running || this.mode === 'paused' || !WEAPONS[kind]) return false;
+    const at=this.context.currentTime+.005;
+    const tone=(f,d,w,v,end,delay=0)=>this.tone(f,d,w,v,at+delay,this.weapons,end);
+    const noise=(d,v,from,to,delay=0)=>this.noiseBurst(at+delay,d,v,from,to,this.weapons);
+    if(upgraded)tone(kind==='fork'?440:95,.18,'sine',.035,kind==='fork'?880:65,.02);
+    if(kind==='ion') {tone(1160,.14,'triangle',.27,680);noise(.025,.035,3800,1700);}
+    if(kind==='shuttle')tone(720,.13,'sine',.18,360);
+    if(kind==='pulse') {
+      tone(340,.28,'sine',.15,95);tone(820,.11,'sine',.065,1350,.06);
+      noise(.09,.08,1100,280);
+    }
+    if(kind==='fork') {
+      noise(.12,.22,4600,1400);tone(880,.1,'triangle',.14,2300);
+      tone(1660,.07,'triangle',.07,740,.045);
+    }
+    if(kind==='moon') {
+      tone(190,.24,'sine',.155,365);tone(310,.19,'sine',.09,155,.065);
+      tone(580,.1,'triangle',.04,400,.14);
+    }
+    if(kind==='tape') {
+      noise(.045,.3,3700,800);tone(140,.11,'triangle',.17,80);
+      tone(420,.055,'sine',.075,160);tone(210,.08,'triangle',.065,120,.065);
+    }
     return true;
   }
   noiseBurst(at,duration,volume,from,to,destination=this.blasts) {
@@ -206,10 +218,15 @@ export class GameAudio {
   cue(kind,value=0) {
     if(!this.running||this.mode==='paused')return false;
     const t=this.context.currentTime+.005,last=this.cueTimes.get(kind)??-Infinity;
-    if(t-last<(kind==='coin'?.065:kind==='impact'?.055:0))return false;
+    if(t-last<(kind==='coin'?.065:kind==='impact'?.055:['moon-bounce','moon-chomp','arc-hit'].includes(kind)?.14:0))return false;
     this.cueTimes.set(kind,t);
     const tone=(f,d,w,v,end,delay=0)=>this.tone(f,d,w,v,t+delay,this.effects,end);
-    if(kind==='coin')tone(760+(value%4)*100,.09,'sine',.045,620+(value%4)*100);
+    if(kind==='moon-bounce'){tone(170,.15,'sine',.07,290);tone(340,.09,'sine',.025,230,.04);}
+    else if(kind==='moon-chomp')tone(340,.085,'triangle',.05,180);
+    else if(kind==='arc-hit'){this.noiseBurst(t,.075,.1,3400,1100,this.effects);tone(970,.06,'triangle',.045,390);}
+    else if(kind==='grav-pop'){tone(340,.12,'triangle',.045,140);tone(115,.23,'sine',.1,48);this.noiseBurst(t,.14,.13,900,170,this.effects);}
+    else if(kind==='weapon-empty')tone(310,.12,'triangle',.045,180);
+    else if(kind==='coin')tone(760+(value%4)*100,.09,'sine',.045,620+(value%4)*100);
     else if(kind==='heal'){tone(540,.16,'sine',.08);tone(810,.22,'sine',.07,null,.075);}
     else if(kind==='gear'){tone(610,.12,'triangle',.075);tone(960,.16,'sine',.065,null,.06);}
     else if(kind==='board'){tone(220,.26,'triangle',.13,580);tone(880,.14,'sine',.06,null,.14);}

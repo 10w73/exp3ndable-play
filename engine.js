@@ -63,7 +63,7 @@ export class Run {
     this.distance = 0; this.salvage = 0; this.elapsed = 0; this.scroll = 0;
     this.alive = true; this.health = MAX_HEALTH; this.invulnerable = 0;
     this.obstacles = []; this.coins = []; this.events = [];
-    this.lastCoinPattern = -1; this.coinBag=[]; this.weapon = 'ion'; this.shots = []; this.fireCooldown = 0; this.gear = null; this.nextGearAt = 90;
+    this.lastCoinPattern = -1; this.coinBag=[]; this.weapon = 'ion'; this.ammo = null; this.shots = []; this.attacks = []; this.weaponBag = []; this.fireCooldown = 0; this.gear = null; this.nextGearAt = 90;
     this.spawnIn = 1.8; this.coinIn = .8; this.nextPortal = 260;
     this.portal = null; this.reality = null; this.realityTime = 0; this.combo = 0;
     this.realm='ship';this.shipRoom='crew';
@@ -136,14 +136,84 @@ export class Run {
     const y = 195 + this.rng() * 245;
     patterns[pattern].forEach(([dx,dy],i)=>this.coins.push({x:this.width+60+dx,y:y+dy,phase:i*.4}));
   }
+  get firingWeapon() { return this.vehicle&&(!this.weapon||this.weapon==='ion')?'shuttle':this.weapon; }
   fire() {
     if(!this.alive || (!this.weapon&&!this.vehicle) || this.fireCooldown>0)return false;
-    const kind=this.vehicle?'shuttle':this.weapon,weapon=WEAPONS[kind];
+    const kind=this.firingWeapon,weapon=WEAPONS[kind],upgraded=!!this.vehicle&&kind!=='shuttle';
     this.fireCooldown=weapon.cooldown;
-    for(const vy of weapon.spread?[-weapon.spread,weapon.spread]:[0]) {
-      this.shots.push({x:this.player.x+(this.vehicle?54:27),y:this.player.y-5,kind,vy});
+    const x=this.player.x+(this.vehicle?54:35),y=this.player.y-9;
+    if(kind==='fork'||kind==='tape')this.attacks.push({kind,x,y,upgraded,originX:this.player.x});
+    else for(const offset of upgraded&&['pulse','moon'].includes(kind)?[-18,18]:[0]) {
+      this.shots.push({x,y:y+offset,kind,vy:kind==='moon'?(offset<0?-140:120):0,hits:new Set(),age:0,upgraded});
+    }
+    if(kind!=='shuttle' && this.ammo!==null) {
+      this.ammo--;
+      if(this.ammo===0){this.weapon='ion';this.ammo=null;}
     }
     return true;
+  }
+  chooseWeapon() {
+    let kind;
+    do {
+      if(!this.weaponBag.length) {
+        this.weaponBag=[...PICKUP_WEAPONS];
+        for(let i=this.weaponBag.length-1;i>0;i--) {
+          const j=Math.floor(this.rng()*(i+1));
+          [this.weaponBag[i],this.weaponBag[j]]=[this.weaponBag[j],this.weaponBag[i]];
+        }
+      }
+      kind=this.weaponBag.pop();
+    }while(kind===this.weapon);
+    return kind;
+  }
+  damageHazard(o,damage,weapon) {
+    o.hp=(o.hp??(['laser','horizontal','spinner','crusher'].includes(o.type)?4:1))-damage;
+    if(o.hp<=0){o.spent=true;this.events.push({type:'destroy',x:o.x,y:o.y,hazard:o.type,weapon});}
+  }
+  resolveWeapons() {
+    const targetable=o=>!o.spent && !(o.type==='missile'&&o.warning>0);
+    for(const attack of this.attacks) {
+      if(attack.kind==='tape') {
+        for(const o of this.obstacles)if(targetable(o)&&o.x>attack.originX&&o.x<this.width+35&&hazardTouches(o,o.x,attack.y,attack.upgraded?192:96)) {
+          this.damageHazard(o,Infinity,'tape');
+        }
+        this.events.push({type:'stamp',x:attack.x,y:attack.y,width:this.width-attack.x,upgraded:attack.upgraded});
+      } else {
+        const points=[{x:attack.x,y:attack.y}],hit=new Set();
+        for(let i=0;i<(attack.upgraded?5:WEAPONS.fork.links);i++) {
+          const origin=points.at(-1);
+          const choices=this.obstacles.filter(o=>targetable(o)&&SHOOTABLE.has(o.type)&&!hit.has(o)&&
+            o.x>attack.originX&&o.x<Math.min(this.width+25,attack.x+(attack.upgraded?660:480))&&
+            (i?Math.hypot(o.x-origin.x,o.y-origin.y)<190:Math.abs(o.y-origin.y)<(attack.upgraded?145:100)));
+          choices.sort((a,b)=>Math.hypot(a.x-origin.x,a.y-origin.y)-Math.hypot(b.x-origin.x,b.y-origin.y));
+          const o=choices[0];if(!o)break;
+          hit.add(o);points.push({x:o.x,y:o.y});this.damageHazard(o,attack.upgraded?4:WEAPONS.fork.damage,'fork');
+        }
+        if(points.length===1)points.push({x:Math.min(this.width+10,attack.x+330),y:attack.y});
+        this.events.push({type:'arc',points});
+      }
+    }
+    this.attacks.length=0;
+    for(const shot of this.shots) {
+      const weapon=WEAPONS[shot.kind];
+      for(const o of this.obstacles) {
+        if(shot.spent||!targetable(o)||(!SHOOTABLE.has(o.type)&&shot.kind!=='moon'))continue;
+        if((shot.kind==='moon'&&shot.hits.has(o))||!hazardTouches(o,shot.x,shot.y,weapon.radius*(shot.upgraded?1.25:1)))continue;
+        if(shot.kind==='pulse') {
+          shot.spent=true;
+          for(const other of this.obstacles)if(targetable(other)&&SHOOTABLE.has(other.type)&&hazardTouches(other,shot.x,shot.y,shot.upgraded?112:weapon.splash)) {
+            this.damageHazard(other,shot.upgraded?3:weapon.damage,'pulse');
+          }
+          this.events.push({type:'grav-pop',x:shot.x,y:shot.y});
+        } else {
+          this.damageHazard(o,weapon.damage*(shot.upgraded?1.5:1),shot.kind);
+          if(shot.kind==='moon') {
+            shot.hits.add(o);shot.spent=shot.hits.size>=(shot.upgraded?8:6);
+            this.events.push({type:'moon-chomp',x:shot.x,y:shot.y});
+          } else {shot.spent=true;this.events.push({type:'impact',x:shot.x,y:shot.y});}
+        }
+      }
+    }
   }
   update(dt, held) {
     if (!this.alive) return;
@@ -165,9 +235,8 @@ export class Run {
     if(this.medkit)this.medkit.x-=move;
     if(!this.vehicle && !this.vehiclePickup && !this.portal && !this.medkit && this.distance>=this.nextVehicleAt)this.spawnVehicle();
     if(this.vehiclePickup)this.vehiclePickup.x-=move;
-    if(!this.gear && !this.portal && !this.medkit && !this.vehiclePickup && this.distance>=this.nextGearAt) {
-      const choices=PICKUP_WEAPONS.filter(kind=>kind!==this.weapon);
-      this.gear={x:this.width+55,y:320,kind:choices[Math.floor(this.rng()*choices.length)]};
+    if(this.ammo===null && !this.gear && !this.portal && !this.medkit && !this.vehiclePickup && this.distance>=this.nextGearAt) {
+      this.gear={x:this.width+55,y:320,kind:this.chooseWeapon()};
       this.nextGearAt=this.distance+85;
     }
     if(this.gear) {
@@ -216,15 +285,10 @@ export class Run {
       if (o.type === 'mimic') {o.y=o.baseY+Math.sin(o.age*.9+o.phase)*22;o.x-=move*.12;}
       if (o.type === 'spinner') o.angle += dt * 1.4;
       if (o.type === 'pendulum') swing(o,dt);
-      for(const shot of this.shots) {
-        if(shot.spent || o.spent || !SHOOTABLE.has(o.type))continue;
-        const shotHit=hazardTouches(o,shot.x,shot.y,6);
-        if(shotHit) {
-          shot.spent=true;o.hp=(o.hp??(['laser','horizontal','spinner'].includes(o.type)?4:1))-WEAPONS[shot.kind].damage;
-          this.events.push({type:'impact',x:shot.x,y:shot.y});
-          if(o.hp<=0){o.spent=true;this.events.push({type:'destroy',x:o.x,y:o.y,hazard:o.type});}
-        }
-      }
+    }
+    this.resolveWeapons();
+    for(const o of this.obstacles) {
+      if(o.type==='missile'&&o.warning>0)continue;
       if(o.spent)continue;
       const hit=!(o.type==='pendulum'&&o.warning>0) && (this.vehicle?[-24,0,24].some(dx=>hazardTouches(o,this.player.x+dx,this.player.y-4,20)):hazardTouches(o,this.player.x,this.player.y,this.player.radius));
       if (hit && this.invulnerable === 0) {
@@ -243,7 +307,7 @@ export class Run {
         this.salvage -= lost;
         this.invulnerable = RECOVERY_SECONDS;
         const lostWeapon=!!this.weapon;
-        this.weapon=null;this.nextGearAt=this.distance+55;
+        this.weapon=null;this.ammo=null;this.nextGearAt=this.distance+55;
         o.spent = true;
         this.events.push({type:'hit', hazard:o.type, health:this.health, lost, lostWeapon});
         if (this.health === 0) {
@@ -254,7 +318,7 @@ export class Run {
       }
     }
     if(this.alive && this.gear && (this.gear.x-this.player.x)**2+(this.gear.y-this.player.y)**2<65**2) {
-      this.weapon=this.gear.kind;this.gear=null;this.nextGearAt=this.distance+135;
+      this.weapon=this.gear.kind;this.ammo=WEAPONS[this.weapon].ammo;this.gear=null;this.nextGearAt=this.distance+135;
       this.events.push({type:'gear',weapon:this.weapon});
     }
     if(this.alive && this.vehiclePickup) {
@@ -284,7 +348,17 @@ export class Run {
     }
     this.obstacles = this.obstacles.filter(o => !o.spent && o.x > -150);
     this.coins = this.coins.filter(c => !c.taken && c.x > -40);
-    for(const shot of this.shots){shot.x+=Math.max(650,this.width*.8)*dt;shot.y+=shot.vy*dt;}
-    this.shots=this.shots.filter(shot=>!shot.spent && shot.x<this.width+45 && shot.y>CEILING && shot.y<FLOOR);
+    for(const shot of this.shots) {
+      shot.x+=WEAPONS[shot.kind].speed*dt;shot.y+=shot.vy*dt;if(shot.kind==='moon')shot.age+=dt;
+      if(shot.kind==='moon') {
+        shot.vy+=dt*200;
+        const radius=shot.upgraded?40:32,top=CEILING+radius,bottom=FLOOR-radius;
+        if(shot.y<top||shot.y>bottom) {
+          shot.y=Math.max(top,Math.min(bottom,shot.y));shot.vy=shot.y===bottom?-245:Math.abs(shot.vy);
+          this.events.push({type:'moon-bounce',x:shot.x,y:shot.y});
+        }
+      }
+    }
+    this.shots=this.shots.filter(shot=>!shot.spent&&shot.x<this.width+65&&(shot.kind!=='moon'||shot.age<5)&&(shot.kind==='moon'||shot.y>CEILING&&shot.y<FLOOR));
   }
 }

@@ -97,12 +97,14 @@ export function drawCrew(c,x,y,thrust,scale,vy,time,weapon='ion',grounded=false,
   if(weapon){
     r(c,8,-12,32,8,'#172e3d');r(c,18,-15,16,4,'#829d9b');r(c,20,-11,21,3,'#b5cbb7');r(c,39,-10,6,5,'#6b9296');
     r(c,10,-6,5,8,'#304b58');r(c,7,-9,8,7,'#deb08a');r(c,1,-14,9,5,'#b75159');r(c,28,-7,7,4,'#deb08a');
-    if(weapon==='pulse'){r(c,21,-17,18,13,'#a28670');r(c,31,-14,11,6,WEAPONS.pulse.color);}
-    if(weapon==='fork'){r(c,27,-17,17,3,WEAPONS.fork.color);r(c,27,-5,17,3,WEAPONS.fork.color);}
+    if(weapon==='pulse'){r(c,13,-23,30,25,'#685e53');r(c,19,-20,20,19,WEAPONS.pulse.color);r(c,25,-16,9,11,'#786853');}
+    if(weapon==='fork'){r(c,18,-20,8,20,'#637b88');r(c,26,-21,22,5,WEAPONS.fork.color);r(c,26,0,22,5,WEAPONS.fork.color);}
+    if(weapon==='moon')moonFace(c,34,-10,13,0);
+    if(weapon==='tape'){r(c,15,-24,10,18,'#af9d7b');r(c,6,-9,42,13,'#b7776c');r(c,5,3,44,4,'#dfb29a');}
   }
   c.restore();
 }
-export function drawShuttle(c,x,y,hull=3,thrust=false,time=0,vy=0,pickup=false) {
+export function drawShuttle(c,x,y,hull=3,thrust=false,time=0,vy=0,pickup=false,weapon='shuttle') {
   c.save();c.translate(Math.round(x),Math.round(y));c.rotate(Math.max(-.06,Math.min(.06,vy*.00015)));
   if(thrust){for(const dx of [-29,24]){const l=12+Math.sin(time*22+dx)*4;r(c,dx,23,7,l,'#b2c9a0');r(c,dx+2,25,3,l+5,'#e4d0a0');}}
   // Fleet shuttle cabin, junk-saucer belly, mismatched nacelles and taped repairs.
@@ -122,6 +124,14 @@ export function drawShuttle(c,x,y,hull=3,thrust=false,time=0,vy=0,pickup=false) 
   r(c,-5,-6,12,5,'#d9d4b5');r(c,-3,-5,2,3,'#4e6b6d');r(c,2,-5,2,3,'#4e6b6d');
   if(hull<3){r(c,10,-29,2,8,'#d6d4bc');r(c,12,-25,4,2,'#d6d4bc');r(c,-32,8,7,4,'#564f45');}
   if(hull<2){r(c,-14,-8,10,7,'#596c68');r(c,-11,-7,2,5,'#c5966c');r(c,-39,23,3,8,'#ad9475');}
+  if(!pickup&&weapon!=='shuttle'){
+    const color=WEAPONS[weapon].color;
+    for(const side of [-1,1]){r(c,side*30-10,-7,20,7,color);r(c,side*30-8,-12,16,5,'#66838b');}
+    if(weapon==='moon')moonFace(c,32,-8,15,0);
+    if(weapon==='tape'){r(c,34,-18,10,18,'#b39d7f');r(c,22,-3,34,8,color);}
+    if(weapon==='fork'){r(c,35,-19,21,4,color);r(c,35,1,21,4,color);}
+    if(weapon==='pulse')r(c,32,-16,20,20,color);
+  }
   if(pickup){
     c.strokeStyle='#a9c997';c.lineWidth=2;c.beginPath();
     for(const side of [-1,1]){c.moveTo(side*65,-25);c.lineTo(side*65,-37);c.lineTo(side*51,-37);c.moveTo(side*65,19);c.lineTo(side*65,31);c.lineTo(side*51,31);}
@@ -264,20 +274,40 @@ export function drawDimension(c,W,scroll,sector,time){
   return true;
 }
 
+function moonFace(c,x,y,radius,bites){
+  c.save();c.translate(Math.round(x),Math.round(y));c.scale(radius/16,radius/16);
+  r(c,-18,-12,36,24,'#57656b');r(c,-12,-18,24,36,'#57656b');
+  r(c,-16,-11,32,22,'#e0d4b1');r(c,-11,-16,22,32,'#e0d4b1');
+  r(c,-12,-9,6,5,'#aaa58e');r(c,7,-11,5,4,'#b9b499');r(c,5,8,7,4,'#b4ad94');
+  r(c,-9,-5,5,6,'#f2ecd0');r(c,4,-5,5,6,'#f2ecd0');r(c,-7,-4,2,4,'#334751');r(c,6,-4,2,4,'#334751');
+  r(c,-10,-9,6,2,'#7b806f');r(c,4,-9,6,2,'#7b806f');
+  r(c,-5,5,10,bites?6:3,'#59615d');if(bites){r(c,-4,5,3,2,'#f3ebce');r(c,1,5,3,2,'#f3ebce');}
+  c.restore();
+}
 export function drawShot(c,shot){
   const color=WEAPONS[shot.kind].color;
-  r(c,shot.x-11,shot.y-2,17,4,color);
-  if(shot.kind==='pulse'){r(c,shot.x-7,shot.y-5,10,10,color);r(c,shot.x-4,shot.y-3,7,6,'#eee0bc');}
-  else if(shot.kind==='fork')r(c,shot.x-15,shot.y-1,5,2,'#7398ae');
-  else r(c,shot.x-18,shot.y-1,8,2,'#8ebaaa');
+  if(shot.kind==='moon'){
+    c.save();c.globalAlpha=Math.min(1,(5-shot.age)*2);c.translate(shot.x,shot.y);c.rotate(shot.vy*.0015);
+    moonFace(c,0,0,shot.upgraded?40:32,shot.hits.size);c.restore();return;
+  }
+  if(shot.kind==='pulse'){
+    c.strokeStyle=color;c.lineWidth=3;c.beginPath();c.ellipse(shot.x,shot.y,15,12,0,0,Math.PI*2);c.stroke();
+    r(c,shot.x-8,shot.y-8,16,16,'#dec697');r(c,shot.x-4,shot.y-5,9,10,'#f2dfb9');
+    for(let i=1;i<4;i++)r(c,shot.x-15-i*9,shot.y-2,4,4,'#a58f7766');
+  }else{r(c,shot.x-11,shot.y-2,17,4,color);r(c,shot.x-18,shot.y-1,8,2,'#8ebaaa');}
 }
 export function drawGear(c,gear){
-  const {x,y,kind}=gear,color=WEAPONS[kind].color;
-  r(c,x-24,y-20,48,40,'#172f3a');r(c,x-22,y-18,44,36,'#42616b');
-  r(c,x-15,y-5,30,7,color);r(c,x-8,y+2,5,8,'#a7c19c');
-  if(kind==='fork'){r(c,x+3,y-10,15,3,color);r(c,x+3,y+3,15,3,color);}
-  if(kind==='pulse')r(c,x+1,y-8,16,13,color);
-  c.textAlign='center';txt(c,WEAPONS[kind].name,x,y-29,9,color);c.textAlign='left';
+  const {x,y,kind}=gear,weapon=WEAPONS[kind],color=weapon.color;
+  r(c,x-27,y-23,54,46,'#172f3a');r(c,x-25,y-21,50,42,weapon.ammo?'#6a6960':'#42616b');
+  if(kind==='moon')moonFace(c,x,y,19,0);
+  else if(kind==='tape'){
+    r(c,x-7,y-18,14,19,'#c1a985');r(c,x-21,y,42,13,'#bc7f72');r(c,x-23,y+13,46,4,'#e5b59a');
+  }else if(kind==='fork'){
+    r(c,x-9,y-14,8,29,'#8295a0');r(c,x-1,y-15,23,5,color);r(c,x-1,y+11,23,5,color);
+  }else if(kind==='pulse'){
+    r(c,x-17,y-14,34,28,'#7b735f');r(c,x-10,y-10,20,20,color);r(c,x-4,y-6,8,12,'#f3deba');
+  }else{r(c,x-15,y-5,30,7,color);r(c,x-8,y+2,5,8,'#a7c19c');}
+  c.textAlign='center';txt(c,weapon.name+(weapon.ammo?` · ${weapon.ammo}`:''),x,y-33,10,color);c.textAlign='left';
 }
 
 function drawAnnex(c,W,scroll,time){

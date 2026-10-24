@@ -77,7 +77,11 @@ function initAudio(confirm = false) {
   // after it resolves, rather than losing a short beep in a suspended context.
   audio.enable().then(running => { if (running && confirm) audio.cue(mode==='playing'?'start':'confirm'); });
 }
-function fireRifle() { if(mode==='playing' && run?.fire())audio.weapon(run.vehicle?'shuttle':run.weapon); }
+function fireWeapon() {
+  if(mode!=='playing'||!run)return;
+  const kind=run.firingWeapon,upgraded=!!run.vehicle&&kind!=='shuttle';
+  if(run.fire()){audio.weapon(kind,upgraded);if(run.firingWeapon!==kind)audio.cue('weapon-empty');}
+}
 function updateSound() {
   const on = sound && soundState === 'on';
   const label = on ? 'Turn music and sound off' : 'Enable music and sound';
@@ -208,7 +212,7 @@ function clearSelection() { const selection = window.getSelection(); if(selectio
 frame.addEventListener('pointerdown', e => {
   if ((isControl(e.target) && !isThrust(e.target)) || mode !== 'playing') return;
   if(e.cancelable)e.preventDefault(); clearSelection(); pointers.add(e.pointerId); syncHeld();
-  fireRifle();
+  fireWeapon();
   try { (isThrust(e.target) ? thrust : canvas).setPointerCapture(e.pointerId); } catch {}
   if(sound && !audio.running) initAudio();
 }, { passive:false });
@@ -222,7 +226,7 @@ frame.addEventListener('touchstart', e => {
   if ((isControl(e.target) && !isThrust(e.target)) || mode !== 'playing') return;
   if(e.cancelable)e.preventDefault(); clearSelection();
   for(const touch of e.changedTouches)touches.add(touch.identifier);
-  fireRifle();
+  fireWeapon();
   syncHeld(); if(sound && !audio.running)initAudio();
 }, { passive:false });
 frame.addEventListener('touchmove', e => { if(touches.size && e.cancelable)e.preventDefault(); }, { passive:false });
@@ -236,7 +240,7 @@ window.addEventListener('touchend',touchRelease,{ passive:false });
 window.addEventListener('touchcancel',touchRelease,{ passive:false });
 const isEditing = target => target instanceof Element && target.closest('input, textarea, [contenteditable=true]');
 for(const event of ['contextmenu','selectstart','dragstart'])frame.addEventListener(event,e=>{if(!isEditing(e.target))e.preventDefault();});
-thrust.addEventListener('keydown',e=>{if(mode==='playing' && ['Space','Enter'].includes(e.code)){e.preventDefault();if(!e.repeat)fireRifle();keys.add(e.code);syncHeld();if(sound&&!audio.running)initAudio();}});
+thrust.addEventListener('keydown',e=>{if(mode==='playing' && ['Space','Enter'].includes(e.code)){e.preventDefault();if(!e.repeat)fireWeapon();keys.add(e.code);syncHeld();if(sound&&!audio.running)initAudio();}});
 thrust.addEventListener('keyup',e=>{if(['Space','Enter'].includes(e.code)){e.preventDefault();keys.delete(e.code);syncHeld();}});
 window.addEventListener('keydown', e => {
   if (isEditing(e.target)) return;
@@ -247,11 +251,11 @@ window.addEventListener('keydown', e => {
     e.preventDefault(); e.stopPropagation(); if(e.repeat) return;
     if (mode === 'ready' || mode === 'dead') start();
     else if(mode === 'paused') pause();
-    if(mode === 'playing') { keys.add(e.code); syncHeld(); fireRifle(); if(sound && !audio.running) initAudio(); }
+    if(mode === 'playing') { keys.add(e.code); syncHeld(); fireWeapon(); if(sound && !audio.running) initAudio(); }
     return;
   }
   if ((e.code === 'Escape' || e.code === 'KeyP') && !e.repeat) pause();
-  if(e.code==='KeyX' && !e.repeat){e.preventDefault();fireRifle();}
+  if(e.code==='KeyX' && !e.repeat){e.preventDefault();fireWeapon();}
 }, {capture:true});
 window.addEventListener('keyup', e => {
   if (!isEditing(e.target) && !frame.classList.contains('show-records') && ['Space','ArrowUp','KeyW'].includes(e.code)) {e.preventDefault();e.stopPropagation();}
@@ -418,9 +422,14 @@ function tick(dt) {
         }
         if(event.type==='impact'){fx.impact(event.x,event.y);audio.cue('impact');}
         if(event.type==='destroy'){
-          fx.explode(event.x,event.y,event.hazard);audio.explosion(event.hazard);
+          if(event.weapon==='tape')fx.paperwork(event.x,event.y);
+          else {fx.explode(event.x,event.y,['pulse','fork'].includes(event.weapon)?'energy':event.hazard);if(!['pulse','fork','moon'].includes(event.weapon))audio.explosion(event.hazard);else if(event.weapon==='fork')audio.cue('arc-hit');}
           shake=Math.max(shake,event.hazard==='missile'?5:3);
         }
+        if(event.type==='arc')fx.arc(event.points);
+        if(event.type==='stamp'){fx.stamp(event.x,event.y,event.width,event.upgraded);shake=Math.max(shake,3);}
+        if(event.type==='grav-pop'){fx.gravity(event.x,event.y);audio.cue('grav-pop');}
+        if(event.type==='moon-bounce'||event.type==='moon-chomp'){fx.moon(event.x,event.y,event.type==='moon-bounce');audio.cue(event.type);}
         if(event.type==='missile-warning')audio.cue('missile-warning');
         if(event.type==='gear'){speak('gear');audio.cue('gear');}
         if(event.type==='crash') finish(event.hazard);
@@ -442,18 +451,19 @@ function tick(dt) {
   audio.setMode(mode); audio.setThrust(mode==='playing' && held);
   updateThumb();
 }
-let thumbMode, thumbHeld, thumbWeapon, thumbVehicle;
+let thumbMode, thumbHeld, thumbWeapon, thumbVehicle, thumbAmmo;
 function updateThumb() {
   const active = mode === 'playing' && held;
-  const vehicle=!!run?.vehicle,weapon=vehicle?'shuttle':run?run.weapon:'ion';
-  if(thumbMode === mode && thumbHeld === active && thumbWeapon===weapon && thumbVehicle===vehicle)return;
-  thumbMode = mode; thumbHeld = active; thumbWeapon=weapon;thumbVehicle=vehicle;
+  const vehicle=!!run?.vehicle,weapon=run?run.firingWeapon:'ion';
+  const ammo=weapon==='shuttle'?null:run?.ammo ?? null;
+  if(thumbAmmo===ammo && thumbMode === mode && thumbHeld === active && thumbWeapon===weapon && thumbVehicle===vehicle)return;
+  thumbAmmo=ammo;thumbMode = mode; thumbHeld = active; thumbWeapon=weapon;thumbVehicle=vehicle;
   frame.dataset.mode = mode;
   thrust.disabled = mode !== 'playing';
   thrust.classList.toggle('held',active); thrust.setAttribute('aria-pressed',String(active));
   $('thumb-instruction').textContent = mode==='playing' ? active?'Release to fall':'Hold to rise' : mode==='paused'?'On a break' : mode==='dead'?'Another go?':'Hold to rise';
-  $('thrust-detail').textContent=weapon?'Tap to fire':'Release to fall';
-  $('gear-status').textContent=weapon?WEAPONS[weapon].name:'Unarmed';
+  $('thrust-detail').textContent=ammo!==null?`${ammo} ${weapon==='moon'?'moons':'stamps'}`:weapon?'Tap to fire':'Release to fall';
+  $('gear-status').textContent=weapon?(vehicle&&weapon!=='shuttle'?WEAPONS[weapon].upgrade:WEAPONS[weapon].name)+(ammo!==null?` · ${ammo}`:''):'Unarmed';
   thrust.setAttribute('aria-label',weapon?'Hold to fly. Tap to fire. Release to fall.':'Hold to fly. Release to fall.');
 }
 function render() {
@@ -485,7 +495,7 @@ function render() {
         ctx.beginPath();ctx.ellipse(run.player.x,run.player.y-7,run.vehicle?70:38,49,0,0,Math.PI*2);ctx.stroke();
         ctx.globalAlpha = Math.sin(time*24)>0?.6:1;
       }
-      if(run.vehicle)drawShuttle(ctx,run.player.x,run.player.y,run.vehicle.hull,held,time,run.player.vy);
+      if(run.vehicle)drawShuttle(ctx,run.player.x,run.player.y,run.vehicle.hull,held,time,run.player.vy,false,run.firingWeapon);
       else player(run.player.x,run.player.y,held,1,run.player.vy);ctx.globalAlpha=1;
     }
   } else attract();
