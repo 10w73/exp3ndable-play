@@ -8,6 +8,7 @@
   <meta name="theme-color" content="#101b22">
   <meta name="description" content="A one-thumb sci-fi escape game. You were only going to get coffee.">
   <link rel="icon" href="icon.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png">
   <link rel="manifest" href="manifest.webmanifest" crossorigin="use-credentials">
   <link rel="stylesheet" href="style.css">
   <title>exp3ndable</title>
@@ -18,11 +19,11 @@
       <h1 class="sr-only">exp3ndable</h1>
       <section class="game-frame" id="game-frame" aria-label="exp3ndable game">
         <div class="flight-deck" id="flight-deck">
-        <canvas id="game" aria-label="Side-scrolling spaceship escape. Hold the screen, Space, or Up arrow to fly. Release to fall. Avoid red hazards and collect gold salvage."></canvas>
+        <canvas id="game" aria-label="Side-scrolling spaceship escape. Hold the screen, Space, or Up arrow to fly. Release to fall. Avoid red hazards and collect Stillmatter to keep time stable."></canvas>
         <div class="hud">
-          <div class="distance"><span class="hud-label">METERS</span><strong id="distance">0000</strong><div class="health" id="health" role="status" aria-live="polite" aria-label="Health: 3 of 3"><span class="sr-only">Health</span><b class="health-pip" aria-hidden="true"></b><b class="health-pip" aria-hidden="true"></b><b class="health-pip" aria-hidden="true"></b></div></div>
-          <div class="salvage"><span class="salvage-icon">⬡</span><strong id="salvage">00</strong><span class="hud-label">SALVAGE</span><span class="hud-best">BEST <strong id="best">0 m</strong></span><span id="hull-status" class="hull-status" role="status" aria-live="polite" hidden></span></div>
-          <div class="hud-actions"><button id="sound" class="icon-button" aria-label="Turn sound on" title="Turn sound on"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m11 5-6 4H2v6h3l6 4V5m5 4 6 6m0-6-6 6"/></svg></button><button id="pause" class="icon-button" aria-label="Pause game" title="Pause game" disabled><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5v14M16 5v14"/></svg></button><button id="fullscreen" class="icon-button fullscreen" aria-label="Toggle fullscreen" title="Fullscreen"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9V4h5m6 0h5v5m0 6v5h-5m-6 0H4v-5"/></svg></button></div>
+          <div class="distance"><span class="hud-label">METERS <span id="run-mode">· Regular</span></span><strong id="distance">0000</strong><div class="vitals"><div class="health" id="health" role="status" aria-live="polite" aria-label="Health: 3 of 3"><span class="sr-only">Health</span><b class="health-pip" aria-hidden="true"></b><b class="health-pip" aria-hidden="true"></b><b class="health-pip" aria-hidden="true"></b></div><span id="hull-status" class="hull-status" role="status" aria-live="polite" hidden></span></div></div>
+          <div class="salvage"><span class="salvage-icon">⬡</span><strong id="salvage">00</strong><span class="hud-label">STILLMATTER</span><span class="hud-best sr-only">BEST <strong id="best">0 m</strong></span>
+          <label class="time-meter" for="time-debt"><span id="time-label">Time debt</span><meter id="time-debt" min="0" max="100" low="40" high="75" optimum="0" value="0" title="Collect Stillmatter to slow time down"></meter></label></div><div class="hud-actions"><button id="sound" class="icon-button" aria-label="Turn sound on" title="Turn sound on"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m11 5-6 4H2v6h3l6 4V5m5 4 6 6m0-6-6 6"/></svg></button><button id="pause" class="icon-button" aria-label="Pause game" title="Pause game" disabled><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5v14M16 5v14"/></svg></button><button id="fullscreen" class="icon-button fullscreen" aria-label="Toggle fullscreen" title="Fullscreen"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9V4h5m6 0h5v5m0 6v5h-5m-6 0H4v-5"/></svg></button></div>
           <span class="audio-status sr-only" id="audio-status" role="status" aria-live="polite">SOUND OFF</span>
         </div>
         <div class="sector-label" id="sector">Personnel deck</div>
@@ -33,23 +34,25 @@
             <button class="pilot-button" id="pilot-open" aria-label="Pilot name and scores"><span id="pilot-tag">CREW-07</span><span class="pilot-separator">/</span>Scores</button>
             <h2>exp<em>3</em>ndable</h2>
             <div class="crew-chat" id="intro-chat" aria-label="Crew conversation"></div>
-            <button class="primary-button" id="start">Play <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 19 19 5M5 5h14v14"/></svg></button>
+            <div class="start-actions"><fieldset class="difficulty-choice" id="difficulty-choice"><legend class="sr-only">Difficulty</legend><label><input type="radio" name="difficulty" value="regular" checked><span>Regular</span></label><label><input type="radio" name="difficulty" value="hard"><span>Hard</span></label></fieldset>
+            <button class="primary-button" id="start">Play <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 19 19 5M5 5h14v14"/></svg></button></div>
             <div class="control-hint"><span class="desktop-hint"><span class="key">SPACE</span> hold to fly · tap to fire · <span class="key">X</span> shoot</span><span class="touch-hint">Hold to fly · tap to fire</span></div>
           </div>
           <div class="end-card" id="end-card" hidden>
             <span class="sr-only" id="end-label">Shift ended</span>
             <h2 id="end-title">A brief career.</h2>
             <p id="end-message" class="sr-only">Your replacement has been notified.</p><div class="crew-chat" id="end-chat" aria-label="Crew conversation"></div>
-            <div class="results"><div><span>DISTANCE</span><strong id="result-distance">0<small>m</small></strong></div><div><span>SALVAGE</span><strong id="result-salvage">0</strong></div><div><span>PERSONAL BEST</span><strong id="result-best">0<small>m</small></strong></div></div>
+            <div class="results"><div><span>DISTANCE</span><strong id="result-distance">0<small>m</small></strong></div><div><span>STILLMATTER</span><strong id="result-salvage">0</strong></div><div><span>PERSONAL BEST</span><strong id="result-best">0<small>m</small></strong></div></div>
             <button class="primary-button" id="restart">Again <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M19 8a8 8 0 1 0 1 8M19 2v6h-6"/></svg></button>
             <div class="end-links"><button class="text-button" id="back">Back</button><button class="text-button" id="scores-open">Scores</button></div>
           </div>
           <div class="pause-card" id="pause-card" hidden><h2>On a break.</h2><div class="crew-chat" id="pause-chat" aria-label="Crew conversation"></div><button class="primary-button" id="resume">Resume <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 12h16m-7-7 7 7-7 7"/></svg></button><button class="text-button" id="paused-scores">Name & scores</button></div>
           <div class="records-card" id="records-card" hidden>
             <h2>Scores</h2>
+
             <form id="pilot-form"><label for="pilot-name">Name</label><div class="name-row"><input id="pilot-name" name="pilot" maxlength="12" autocomplete="off" autocapitalize="characters" spellcheck="false" aria-describedby="pilot-saved"><button type="submit" class="save-name">Done</button></div></form>
             <p id="pilot-saved" role="status" aria-live="polite"></p>
-            <div class="scoreboard" id="scoreboard"><div class="score-heading"><span>CREW</span><span>METERS</span><span>SALVAGE</span></div><ol id="score-list"></ol><p id="no-scores">Your first run goes here.</p></div>
+            <div class="scoreboard" id="scoreboard"><fieldset class="difficulty-choice" id="score-difficulty"><legend class="sr-only">Score difficulty</legend><label><input type="radio" name="score-difficulty" value="regular" checked><span>Regular</span></label><label><input type="radio" name="score-difficulty" value="hard"><span>Hard</span></label></fieldset><div class="score-heading"><span>CREW</span><span>METERS</span><span>STILLMATTER</span></div><ol id="score-list"></ol><p id="no-scores">Your first run goes here.</p></div>
             <button class="primary-button" id="records-close">Back <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m9 5-6 6 6 6M3 11h12a5 5 0 0 1 0 10"/></svg></button>
           </div>
         </div>
