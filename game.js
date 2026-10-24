@@ -7,6 +7,7 @@ import {DIFFICULTIES} from './difficulty.js';
 import { CrewRadio, CREW } from './dialogue.js';
 import {sectorFor,drawRadioPortrait} from './art.js';
 import {createRenderer} from './renderer.js';
+import {RunCheckpoint} from './checkpoint.js';
 
 const nodes=new Map();
 const $=id=>{if(!nodes.has(id))nodes.set(id,document.getElementById(id));return nodes.get(id);};
@@ -31,7 +32,8 @@ let best = 0, sound = true, soundState = 'off';
 try { sound = localStorage.getItem('expendable.sound') !== '0'; } catch {}
 let pilotStorage;
 try { pilotStorage = localStorage; } catch {}
-const pilot = new PilotRecords(pilotStorage);
+const pilot = new PilotRecords(pilotStorage), checkpoint=new RunCheckpoint(pilotStorage);
+let checkpointElapsed=0;
 let selectedDifficulty=pilot.difficulty,scoreDifficulty=selectedDifficulty;
 best=pilot.best(selectedDifficulty);write('best','textContent',`${best} m`);
 write('run-mode','textContent',`· ${DIFFICULTIES[selectedDifficulty].label}`);
@@ -87,6 +89,8 @@ speak('start');
 /** Derive world width from the visible canvas while preserving relative entity distances. */
 function resize() {
   const box = canvas.getBoundingClientRect();
+  // Standalone restoration can precede layout; retain geometry until it is measurable.
+  if(!(box.width>0&&box.height>0))return;
   W = Math.max(400, HEIGHT * box.width / box.height);
   // Render to a small pixel grid, then scale with nearest-neighbor sampling.
   renderer.resize(W);
@@ -161,7 +165,7 @@ function start() {
   setOverlay(null); $('pause').disabled = false; setPauseIcon(false);
   write('distance','textContent','0000'); write('salvage','textContent','00'); write('flight-hint','hidden',false);
   write('sector','textContent','Personnel deck');
-  speak('start');
+  speak('start'); checkpoint.save(run); checkpointElapsed=0;
   if (sound) initAudio(true);
   canvas.tabIndex = 0; canvas.focus({preventScroll:true});
 }
@@ -171,12 +175,12 @@ function setPauseIcon(paused) {
 }
 /** Freeze simulation and silence audio until an explicit resume gesture. */
 function pause() {
-  if (mode === 'playing') { mode = 'paused'; release(); speak(run.elapsed-lastRadioAt<12?lastRadioKey:(run.realm || 'crew')); setOverlay('pause-card'); setPauseIcon(true); $('resume').focus({preventScroll:true}); }
+  if (mode === 'playing') { mode = 'paused'; release(); checkpoint.save(run); checkpointElapsed=0; speak(run.elapsed-lastRadioAt<12?lastRadioKey:(run.realm || 'crew')); setOverlay('pause-card'); setPauseIcon(true); $('resume').focus({preventScroll:true}); }
   else if (mode === 'paused') { mode = 'playing'; setOverlay(null); setPauseIcon(false); accumulator = 0; if(sound)initAudio(); canvas.focus({preventScroll:true}); }
   audio.setMode(mode);
 }
 function finish(hazard) {
-  mode = 'dead'; release(); shake = 13; flash = .4;
+  mode = 'dead'; release(); checkpoint.clear(); shake = 13; flash = .4;
   const distance = Math.floor(run.distance), record = distance > best;
   lastScoreId = pilot.add(distance, run.salvage,run.difficulty);
   best = pilot.best(run.difficulty);
@@ -203,7 +207,7 @@ function takeHit(event) {
 }
 $('start').addEventListener('click',start); $('restart').addEventListener('click',start);
 $('pause').addEventListener('click',pause); $('resume').addEventListener('click',pause);
-$('back').addEventListener('click',() => { mode = 'ready'; run = null; release(); particles = []; fx.clear(); audio.setRealm('ship'); setOverlay('intro'); write('distance','textContent','0000'); write('salvage','textContent','00'); write('sector','textContent','Personnel deck'); speak('start'); $('start').focus({preventScroll:true}); });
+$('back').addEventListener('click',() => { checkpoint.clear(); mode = 'ready'; run = null; release(); particles = []; fx.clear(); audio.setRealm('ship'); setOverlay('intro'); write('distance','textContent','0000'); write('salvage','textContent','00'); write('sector','textContent','Personnel deck'); speak('start'); $('start').focus({preventScroll:true}); });
 function renderRecords() {
   write('pilot-tag','textContent',pilot.name);
   $('score-list').replaceChildren();
@@ -302,7 +306,13 @@ window.addEventListener('keyup', e => {
   keys.delete(e.code); syncHeld();
 }, {capture:true});
 window.addEventListener('blur',() => { release(); if(mode === 'playing') pause(); });
-document.addEventListener('visibilitychange',() => { if(document.hidden && mode === 'playing') pause(); release(); audio.setMode(document.hidden ? 'paused' : mode); });
+document.addEventListener('visibilitychange',() => { if(document.hidden)saveAndPause(); release(); audio.setMode(document.hidden ? 'paused' : mode); });
+/** iOS may discard the process without unload; hidden/pagehide are durable save boundaries. */
+function saveAndPause() {
+  if(mode==='playing')pause();
+  else if(mode==='paused')checkpoint.save(run);
+}
+window.addEventListener('pagehide',saveAndPause);
 
 function burst(x,y,color,power=1) { if(particles.length > 180) return; particles.push({x,y,vx:(Math.random()-.5)*230*power,vy:(Math.random()-.5)*230*power,life:.45+Math.random()*.45,max:.9,color,r:2+Math.random()*4}); }
 /** Consume fixed 120 Hz simulation steps and render UI only when values change. */
@@ -358,11 +368,9 @@ function tick(dt) {
         if(event.type==='normal') {speak('normal');audio.cue('normal');}
       }
     }
-    write('distance','textContent',String(Math.floor(run.distance)).padStart(4,'0'));write('salvage','textContent',String(run.salvage).padStart(2,'0'));
-    updateHealth();
-    write('flight-hint','hidden',run.elapsed>5);
-    const destination=sectorFor(run);
-    write('sector','textContent',run.reality ? `${run.reality==='low'?'Low gravity':'Double salvage'} · ${Math.ceil(run.realityTime)}s` : destination.name.toLowerCase());
+    updateRunHud();
+    checkpointElapsed+=dt;
+    if(mode==='playing'&&checkpointElapsed>=3){checkpoint.save(run);checkpointElapsed=0;}
     if(held && Math.random()>.25) {const p=run.player;particles.push({x:p.x-14,y:p.y+24,vx:-60-Math.random()*110,vy:65+Math.random()*50,life:.3,max:.4,color:Math.random()>.5?'#f9d88c':'#f7916f',r:2+Math.random()*3});}
   }
   write('hit-feedback','hidden',mode !== 'playing' || damageTime <= 0);
@@ -374,6 +382,13 @@ function tick(dt) {
   updateHull();
   audio.setMode(mode); audio.setThrust(mode==='playing' && held);
   updateThumb();
+}
+/** Refresh both live and recovered HUDs from the same simulation values. */
+function updateRunHud() {
+  write('distance','textContent',String(Math.floor(run.distance)).padStart(4,'0'));write('salvage','textContent',String(run.salvage).padStart(2,'0'));
+  updateHealth();write('flight-hint','hidden',run.elapsed>5);
+  const destination=sectorFor(run);
+  write('sector','textContent',run.reality ? `${run.reality==='low'?'Low gravity':'Double salvage'} · ${Math.ceil(run.realityTime)}s` : destination.name.toLowerCase());
 }
 let thumbMode, thumbHeld, thumbWeapon, thumbVehicle, thumbAmmo;
 function updateThumb() {
@@ -391,5 +406,13 @@ function updateThumb() {
   thrust.setAttribute('aria-label',weapon?'Hold to fly. Tap to fire. Release to fall.':'Hold to fly. Release to fall.');
 }
 function loop(ms) {const dt=Math.min(.05,(ms-last)/1000||0);last=ms;tick(dt);renderer.draw({run,mode,held,time,particles,fx,shake,flash});requestAnimationFrame(loop);}
-resize();requestAnimationFrame(loop);
+resize();
+const recovered=checkpoint.load(W);
+if(recovered) {
+  run=recovered;selectedDifficulty=run.difficulty;best=pilot.best(selectedDifficulty);
+  document.querySelector(`#difficulty-choice input[value="${selectedDifficulty}"]`).checked=true;
+  write('run-mode','textContent',`· ${DIFFICULTIES[selectedDifficulty].label}`);write('best','textContent',`${best} m`);
+  updateRunHud();audio.setRealm(run.realm);mode='playing';$('pause').disabled=false;canvas.tabIndex=0;pause();
+}
+requestAnimationFrame(loop);
 if('serviceWorker' in navigator) window.addEventListener('load',()=>navigator.serviceWorker.register('./sw.js',{updateViaCache:'none'}).then(registration=>registration.update()).catch(()=>{}));

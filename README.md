@@ -117,6 +117,10 @@ whether this was the approved route.
   hold elsewhere in the flight area too, or use a mouse or keyboard.
 - **Your name, your scores.** Pick a pilot name and chase your personal best.
   Your name and top five runs in each mode stay in that browser; there is no shared leaderboard.
+- **Leave a shift, come back to it.** Pausing or switching away saves your active run.
+  Reopening returns to the pause screen with your gear, health and progress intact;
+  tap **Resume** when ready. Flight also saves every three seconds as a fallback.
+  Saves stay on that device and site; clearing browser data removes them.
 - **Take it offline.** After an online visit has finished loading, the game can
   reopen offline in a compatible browser. Add it to your Home Screen where supported;
   the app includes a dedicated iOS touch icon and raster install icons.
