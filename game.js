@@ -16,7 +16,7 @@ function write(id,property,value){const node=$(id);if(node[property]!==value)nod
 const canvas = $('game'), renderer=createRenderer(canvas);
 const frame = $('game-frame');
 const thrust = $('thrust');
-// Dynamic viewport units own game geometry. VisualViewport is used only to
+// The fixed viewport root owns game geometry. VisualViewport is used only to
 // keep the name form inside the on-screen keyboard's visible rectangle.
 /** Keep the name editor within VisualViewport; the game world uses CSS viewport units. */
 function fitKeyboard() {

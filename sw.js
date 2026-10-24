@@ -1,4 +1,4 @@
-const CACHE = 'exp3ndable-v25';
+const CACHE = 'exp3ndable-v26';
 const FILES = ['./', './index.html', './style.css', './game.js', './renderer.js', './engine.js', './difficulty.js', './arsenal.js', './creatures.js', './creature-art.js', './audio.js', './fx.js', './records.js', './checkpoint.js', './dialogue.js', './art.js', './icon.svg', './apple-touch-icon.png', './icon-192.png', './icon-512.png', './manifest.webmanifest'];
 self.addEventListener('install', event => { event.waitUntil(caches.open(CACHE).then(cache => cache.addAll(FILES.map(file => new Request(file, { cache:'reload' })))).then(() => self.skipWaiting())); });
 self.addEventListener('activate', event => {
