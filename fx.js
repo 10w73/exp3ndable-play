@@ -9,6 +9,7 @@ const disc=(c,x,y,r,color)=>{
   x=Math.round(x/2)*2;y=Math.round(y/2)*2;r=Math.max(2,Math.round(r/2)*2);c.fillStyle=color;
   c.fillRect(x-r*.6,y-r,r*1.2,r*2);c.fillRect(x-r,y-r*.6,r*2,r*1.2);
 };
+/** Own bounded world-coordinate effects; drawing never changes the Run model. */
 export class CombatFX {
   constructor(random=Math.random){this.random=random;this.clear();}
   clear(){this.blasts=[];this.particles=[];this.toys=[];}
@@ -52,6 +53,7 @@ export class CombatFX {
     }
   }
   trim(){if(this.blasts.length>20)this.blasts.splice(0,this.blasts.length-20);if(this.particles.length>220)this.particles.splice(0,this.particles.length-220);if(this.toys.length>16)this.toys.splice(0,this.toys.length-16);}
+  /** Advance effect seconds and scrolling; paused callers leave this state untouched. */
   update(dt,speed=0){
     for(const toy of this.toys){toy.age+=dt;if(toy.x!==undefined)toy.x-=speed*dt*.2;}
     this.toys=this.toys.filter(toy=>toy.age<toy.life);

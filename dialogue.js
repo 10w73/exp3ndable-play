@@ -85,7 +85,9 @@ const exchanges = {
 };
 
 export class CrewRadio {
+  /** Keep each menu exchange and its reply together without repeated shuffles. */
   constructor(random = Math.random) { this.random = random; this.bags = new Map(); this.last = new Map(); this.pending = []; }
+  /** Select a fresh exchange, falling back to crew dialogue for unknown room keys. */
   start(key) {
     const options = exchanges[key] || exchanges.crew;
     let bag = this.bags.get(key);
@@ -98,6 +100,8 @@ export class CrewRadio {
     const index=bag.pop();this.last.set(key,index);
     const [first,...rest]=options[index];this.pending=rest;return first;
   }
+  /** Consume only the pending reply so newer events replace old conversations. */
   reply() { return this.pending.shift() || null; }
+  /** Report whether the current menu exchange still has a reply. */
   get hasReply() { return this.pending.length>0; }
 }

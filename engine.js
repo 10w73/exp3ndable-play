@@ -17,25 +17,30 @@ const SHIP_ROOMS = ['crew','canteen','lab'];
 // entities, and future object types are safe unless deliberately added here.
 const SHOOTABLE = new Set(['laser','horizontal','spinner','missile','pendulum',...Object.keys(CREATURES)]);
 
+/** Resolve a stable room identifier without advancing the world. */
 export function sectorId(run) {
   return run?.realm && run.realm !== 'ship' ? run.realm : run?.shipRoom ?? 'crew';
 }
 
+/** Test a circular actor against an axis-aligned obstacle in world coordinates. */
 export function circleRect(px, py, radius, box) {
   const x = Math.max(box.x - box.w / 2, Math.min(px, box.x + box.w / 2));
   const y = Math.max(box.y - box.h / 2, Math.min(py, box.y + box.h / 2));
   return (px - x) ** 2 + (py - y) ** 2 < radius ** 2;
 }
 
+/** Test a circle against the closest point of a finite beam. */
 export function circleSegment(x,y,r,a,b) {
   const dx=b.x-a.x,dy=b.y-a.y,length=dx*dx+dy*dy;
   const t=length?Math.max(0,Math.min(1,((x-a.x)*dx+(y-a.y)*dy)/length)):0;
   return (x-a.x-t*dx)**2+(y-a.y-t*dy)**2<r*r;
 }
+/** Resolve pivot, joint and tip coordinates from the coupled angles. */
 export function pendulumPoints(o) {
   const pivot={x:o.x,y:o.y},joint={x:o.x+Math.sin(o.a1)*o.l1,y:o.y+Math.cos(o.a1)*o.l1};
   return [pivot,joint,{x:joint.x+Math.sin(o.a2)*o.l2,y:joint.y+Math.cos(o.a2)*o.l2}];
 }
+/** Create a bounded two-link hazard with a real-time warning. */
 export function makePendulum(x,y,rng=Math.random) {
   return {type:'pendulum',x,y,l1:64,l2:62,a1:1.5+rng()*.5,a2:-1-rng(),v1:.2,v2:.6,hp:4,warning:.95,age:0};
 }
@@ -59,6 +64,7 @@ function hazardTouches(o,x,y,radius) {
 }
 
 export class Run {
+  /** Create one isolated run; width is in world units and rng supports reproducible tests. */
   constructor(width, rng = Math.random, difficulty = 'regular') {
     this.width = width;
     this.rng = rng;
@@ -79,6 +85,7 @@ export class Run {
     this.medkit=null;this.nextAidAt=Infinity;
     this.vehicle=null;this.vehiclePickup=null;this.nextVehicleAt=150;this.lastPendulumAt=-1000;
   }
+  /** Preserve each body's distance from the actor when viewport width changes. */
   resize(width) {
     const previousX=this.player.x;
     this.width=width;this.player.x=Math.min(215,Math.max(85,width*.18));
@@ -87,22 +94,28 @@ export class Run {
       item.x+=offset;if(item.originX!==undefined)item.originX+=offset;
     }
   }
+  /** Combine destination gravity with the temporary portal modifier. */
   get gravity(){return (WORLD_GRAVITY[this.realm]??1)*(this.reality==='low'?410/750:1);}
+  /** Return world units per real second, bounded by the selected pace profile. */
   get speed() {
     const base=Math.min(290,Math.max(185,this.width*.24));
     // Stillmatter controls time debt; both cruise drift and pressure stay bounded.
     return base*this.speedMultiplier;
   }
+  /** Require whole hazards, including swinging reach, to pass before a supply lane. */
   get approachClear(){return this.obstacles.every(o=>o.spent||o.x+(o.type==='pendulum'?o.l1+o.l2:Math.max(o.w??0,o.h??0)/2)<this.player.x-70);}
+  /** Offer one repair packet with a reserved approach, without erasing hazards. */
   spawnMedkit() {
     this.medkit={x:this.width+55,y:Math.max(185,Math.min(465,this.player.y+(this.rng()-.5)*70))};
     // A recovery lane, with time to reach the packet before hazards resume.
     this.spawnIn=Math.max(this.spawnIn,(this.medkit.x-this.player.x)/this.speed+1.4);
   }
+  /** Offer a shuttle with enough protected approach time to board it. */
   spawnVehicle() {
     this.vehiclePickup={x:this.width+85,y:Math.max(200,Math.min(440,this.player.y-45))};
     this.spawnIn=Math.max(this.spawnIn,(this.vehiclePickup.x-this.player.x)/this.speed+1.5);
   }
+  /** Shuffle the current realm's roster without consecutive solo repeats. */
   chooseCreature() {
     if(this.creatureRealm!==this.realm){this.creatureBag=[];this.creatureRealm=this.realm;}
     if(!this.creatureBag.length) {
@@ -113,6 +126,7 @@ export class Run {
     }
     this.lastCreature=this.creatureBag.pop();return this.lastCreature;
   }
+  /** Schedule a creature-majority encounter bag with spaced alternating bulkheads. */
   spawnObstacle() {
     // Keep the creature majority, but prevent long lotteries without a wall.
     if(!this.encounterBag.length) {
@@ -156,6 +170,7 @@ export class Run {
     this.obstacles.push(item);
     return item;
   }
+  /** Offer a continuous reachable trail with one valuable, without repeating formations. */
   spawnCoins() {
     const patterns = [
       [[0,0],[38,-18],[76,-32],[114,-32],[152,-18],[190,0]],
@@ -184,7 +199,9 @@ export class Run {
     const kind=roll<.5?'cell':roll<.88?'data':'relic';
     patterns[pattern].forEach(([dx,dy],i)=>this.coins.push({x:this.width+60+dx,y:y+dy,phase:i*.4,kind:i===valuable?kind:'salvage'}));
   }
+  /** Resolve carried gear or the boarded shuttle's unlimited fallback emitter. */
   get firingWeapon() { return this.vehicle&&(!this.weapon||this.weapon==='ion')?'shuttle':this.weapon; }
+  /** Accept one cooled-down volley, spending one charge even for mounted upgrades. */
   fire() {
     if(!this.alive || (!this.weapon&&!this.vehicle) || this.fireCooldown>0)return false;
     const kind=this.firingWeapon,weapon=WEAPONS[kind],upgraded=!!this.vehicle&&kind!=='shuttle';
@@ -206,6 +223,7 @@ export class Run {
     }
     return true;
   }
+  /** Cycle the ordinary toys and reserve occasional slots for moon/stamp oddities. */
   chooseWeapon() {
     this.gearOffers++;
     if(this.gearOffers%8===0){const kind=this.nextOddity;this.nextOddity=kind==='moon'?'tape':'moon';return kind;}
@@ -222,14 +240,17 @@ export class Run {
     }while(kind===this.weapon);
     return kind;
   }
+  /** Break destructible contacts while leaving solid bulkheads visible. */
   breakOnContact(o){
     if(o.type==='crusher')return;
     o.spent=true;this.events.push({type:'destroy',x:o.x,y:o.y,hazard:o.type,weapon:'collision'});
   }
+  /** Apply weapon damage once and report the matching destruction cue. */
   damageHazard(o,damage,weapon) {
     o.hp=(o.hp??(['laser','horizontal','spinner','crusher'].includes(o.type)?4:1))-damage;
     if(o.hp<=0){o.spent=true;this.events.push({type:'destroy',x:o.x,y:o.y,hazard:o.type,weapon});}
   }
+  /** Resolve queued instant attacks before contacts; pickups remain shot-proof. */
   resolveWeapons() {
     const targetable=o=>!o.spent && !(o.type==='missile'&&o.warning>0);
     for(const attack of this.attacks) {
@@ -276,6 +297,7 @@ export class Run {
       }
     }
   }
+  /** Advance real seconds; motion follows world pace while warnings/recovery use real time. */
   update(dt, held) {
     if (!this.alive) return;
     const previousY = this.player.y;

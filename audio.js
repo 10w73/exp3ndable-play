@@ -16,6 +16,7 @@ const THEMES={
 // All audio is synthesized locally. Resume from a real gesture before scheduling
 // anything: mobile browsers may otherwise consume short sounds while suspended.
 export class GameAudio {
+  /** Create silent audio state; actual nodes are created only from a gesture. */
   constructor(onState = () => {}) {
     this.onState = onState;
     this.enabled = false;
@@ -25,6 +26,7 @@ export class GameAudio {
     this.thrust = false;
     this.realm = 'ship';this.cueTimes=new Map();this.lastScreamAt=-Infinity;
   }
+  /** Build local synthesis buses, ambience and the transparent emergency peak guard. */
   create() {
     const AudioClass = globalThis.AudioContext;
     if (!AudioClass) throw new Error('Audio is unavailable');
@@ -73,7 +75,9 @@ export class GameAudio {
     for(let i=0;i<boom.length;i++){const white=Math.random()*2-1;low=.97*low+.03*white;boom[i]=white*.55+low*1.35;}
     c.onstatechange = () => this.sync();
   }
+  /** Report both the requested setting and the actual platform context readiness. */
   get running() { return this.enabled && this.context?.state === 'running'; }
+  /** Resume synchronously from the calling gesture; failures remain retryable. */
   async enable() {
     this.enabled = true;
     this.onState('starting');
@@ -88,6 +92,7 @@ export class GameAudio {
       return false;
     }
   }
+  /** Fade the complete mix and stop scheduled voices without deleting the preference. */
   disable() {
     this.enabled = false;
     if (this.context) {
@@ -97,6 +102,7 @@ export class GameAudio {
     }
     this.stopMusic();this.stopEffects(); this.onState('off');
   }
+  /** Reconcile platform readiness and game mode with music, effects and propulsion. */
   sync() {
     if (!this.context) return;
     const t = this.context.currentTime;
@@ -106,6 +112,7 @@ export class GameAudio {
     this.engineGain.gain.setTargetAtTime(this.running && this.mode === 'playing' && this.thrust ? .16 : 0, t, .06);
     this.onState(!this.enabled ? 'off' : this.running ? 'on' : 'blocked');
   }
+  /** Change game audio mode without restarting an unchanged arrangement. */
   setMode(mode) {
     if (this.mode === mode) return;
     this.mode = mode;
@@ -113,6 +120,7 @@ export class GameAudio {
     this.music.gain.setTargetAtTime(mode === 'playing' ? .8 : .48, this.context.currentTime, .1);
     this.sync();
   }
+  /** Fade air propulsion only when the held state changes. */
   setThrust(active) {
     if (this.thrust === active) return;
     this.thrust = active;
@@ -120,6 +128,7 @@ export class GameAudio {
     const t = this.context.currentTime;
     this.engineGain.gain.setTargetAtTime(this.running && this.mode === 'playing' && active ? .16 : 0, t, .06);
   }
+  /** Crossfade to the destination arrangement without resetting the groove. */
   setRealm(realm) {
     realm=THEMES[realm]?realm:'ship';
     if(this.realm===realm)return;
@@ -130,6 +139,7 @@ export class GameAudio {
       bus.gain.cancelAndHoldAtTime(t);bus.gain.linearRampToValueAtTime(name===realm?1:0,t+.55);
     }
   }
+  /** Schedule an enveloped oscillator; at/duration use AudioContext seconds. */
   tone(freq, duration, type, volume, at, destination, end) {
     const c = this.context, osc = c.createOscillator(), gain = c.createGain();
     gain.gain.value=0;
@@ -144,6 +154,7 @@ export class GameAudio {
     osc.onended = () => { osc.disconnect(); gain.disconnect(); this.voices.delete(voice); };
     osc.start(at); osc.stop(at + duration + .015);
   }
+  /** Voice one accepted crew or mounted shot; return false when inaudible. */
   weapon(kind = 'ion', upgraded = false) {
     if (!this.running || this.mode === 'paused' || !WEAPONS[kind]) return false;
     const at=this.context.currentTime+.005;
@@ -174,6 +185,7 @@ export class GameAudio {
     }
     return true;
   }
+  /** Schedule filtered noise and release every node after its tail finishes. */
   noiseBurst(at,duration,volume,from,to,destination=this.blasts) {
     const c=this.context,source=c.createBufferSource(),filter=c.createBiquadFilter(),cut=c.createBiquadFilter(),gain=c.createGain();
     gain.gain.value=0;
@@ -187,6 +199,7 @@ export class GameAudio {
     source.onended=()=>{source.disconnect();filter.disconnect();cut.disconnect();gain.disconnect();this.voices.delete(voice);};
     source.start(at);source.stop(at+duration+.02);
   }
+  /** Group simultaneous kills while retaining weapon-specific impact character. */
   destruction(hazard,weapon) {
     if(!this.running||this.mode==='paused')return false;
     const t=this.context.currentTime,key=`destroy:${weapon}`,last=this.cueTimes.get(key)??-Infinity;
@@ -203,6 +216,7 @@ export class GameAudio {
     }
     return this.explosion(hazard,undefined,['torpedo','beam','fork','moon'].includes(weapon)?.6:1);
   }
+  /** Layer a bounded hazard-specific blast, leaving headroom for the groove. */
   explosion(kind,at,level=1) {
     if(!this.running||this.mode==='paused')return false;
     if([...this.voices].filter(v=>v.explosion).length>48)return false;
@@ -225,6 +239,7 @@ export class GameAudio {
     }
     return true;
   }
+  /** Synthesize a short two-syllable celebration with a temporary music/thrust dip. */
   cheer() {
     if(!this.running||this.mode==='paused')return false;
     const t=this.context.currentTime,last=this.cueTimes.get('cheer')??-Infinity;
@@ -252,6 +267,7 @@ export class GameAudio {
     this.noiseBurst(t+.155,.018,.018,3600,2200,this.effects);
     source.start(t);source.stop(t+.33);return true;
   }
+  /** Schedule a rare original panic squeal; its cooldown survives portal crossings. */
   scream() {
     if(!this.running||this.mode!=='playing')return false;
     const c=this.context,now=c.currentTime;
@@ -273,6 +289,7 @@ export class GameAudio {
     source.start(at);vibrato.start(at);source.stop(at+.36);vibrato.stop(at+.36);
     return true;
   }
+  /** Leave old effect tails behind while preserving the destination music crossfade. */
   portal() {
     if(!this.running||this.mode==='paused')return false;
     this.stopEffects();this.cueTimes.clear();
@@ -282,6 +299,7 @@ export class GameAudio {
     this.tone(midi(ROOTS[0]+THEMES[this.realm].shift+12),.32,'sine',.075,t+.15,this.effects);
     return true;
   }
+  /** Play a semantic event cue with per-kind repetition limits. */
   cue(kind,value=0) {
     if(!this.running||this.mode==='paused')return false;
     const t=this.context.currentTime+.005,last=this.cueTimes.get(kind)??-Infinity;
@@ -312,11 +330,13 @@ export class GameAudio {
     else tone(660,.14,'sine',.065,820);
     return true;
   }
+  /** Cancel pending effect voices and restore ducking without stopping music. */
   stopEffects() {
     if(!this.context)return;const t=this.context.currentTime;
     for(const bus of [this.musicDuck,this.engineDuck]){bus.gain.cancelAndHoldAtTime(t);bus.gain.linearRampToValueAtTime(1,t+.025);}
     for(const voice of this.voices)if(!voice.music){try{voice.gain.gain.cancelAndHoldAtTime(t);voice.gain.gain.linearRampToValueAtTime(0,t+.015);voice.source.stop(t+.02);}catch{}}
   }
+  /** Add a quiet, band-limited percussion burst to the specified arrangement bus. */
   hat(at,destination=this.music,level=1) {
     const c = this.context, source = c.createBufferSource(), gain = c.createGain(), filter = c.createBiquadFilter(), smooth = c.createBiquadFilter();
     gain.gain.value=0;
@@ -328,6 +348,7 @@ export class GameAudio {
     source.onended = () => { source.disconnect(); filter.disconnect(); smooth.disconnect(); gain.disconnect(); this.voices.delete(voice); };
     source.start(at); source.stop(at + .065);
   }
+  /** Schedule a short lookahead; recover cleanly after platform timing stalls. */
   startMusic() {
     if (this.timer || !this.running || this.mode === 'paused') return;
     this.nextNote = this.context.currentTime + .035;
@@ -342,6 +363,7 @@ export class GameAudio {
     };
     schedule(); this.timer = setInterval(schedule, 40);
   }
+  /** Arrange one eighth-note step using the destination palette. */
   musicStep(step,at) {
     const p=THEMES[this.realm],root=ROOTS[Math.floor(step/8)%ROOTS.length]+p.shift,note=p.riff[step%8],dest=this.themeBuses[this.realm];
     if(note!==null)this.tone(midi(root+note),this.realm==='machine'?.1:.15,p.lead,p.leadGain,at,dest);
@@ -354,6 +376,7 @@ export class GameAudio {
     if(this.realm==='aquarium'&&step%8===2)this.tone(midi(root+31),.45,'sine',.035,at,dest);
     if(this.realm==='scrapyard'&&step%8===6)this.tone(midi(root+19),.12,'triangle',.04,at,dest, midi(root+12));
   }
+  /** Fade and disconnect arrangement voices while preserving carried effect state. */
   stopMusic() {
     clearInterval(this.timer); this.timer = null;
     if(!this.context)return;

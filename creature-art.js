@@ -11,6 +11,7 @@ function eye(c,x,y,size,time) {
 function mug(c,x,y,color) {
   block(c,x,y,9,11,color);block(c,x+8,y+2,4,6,color);block(c,x+1,y-2,7,3,'#4d4940');
 }
+/** Draw an original species, pose and health indicator without mutating its state. */
 export function drawCreature(c,o,sector,time) {
   const v=o.variant??0,t=o.age??time,accent=({machine:'#9ab88c',organic:'#d99d9e',void:'#b9a9d1',aquarium:'#8fbfbd',scrapyard:'#c3a281'})[sector.id]??'#b1c3ad';
   c.save();c.translate(Math.round(o.x),Math.round(o.y));

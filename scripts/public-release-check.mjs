@@ -6,7 +6,7 @@ import {fileURLToPath, pathToFileURL} from 'node:url';
 
 export const GAME_FILES = Object.freeze([
   'arsenal.js', 'art.js', 'creatures.js', 'creature-art.js', 'audio.js', 'dialogue.js', 'engine.js', 'fx.js',
-  'game.js', 'difficulty.js', 'apple-touch-icon.png', 'icon-192.png', 'icon-512.png', 'icon.svg', 'index.html', 'manifest.webmanifest', 'records.js',
+  'game.js', 'renderer.js', 'difficulty.js', 'apple-touch-icon.png', 'icon-192.png', 'icon-512.png', 'icon.svg', 'index.html', 'manifest.webmanifest', 'records.js',
   'style.css', 'sw.js'
 ]);
 export const ICON_SIZES=Object.freeze({'apple-touch-icon.png':180,'icon-192.png':192,'icon-512.png':512});
@@ -15,6 +15,7 @@ function crc32(bytes) {
   for(const byte of bytes){crc^=byte;for(let bit=0;bit<8;bit++)crc=(crc>>>1)^((crc&1)?0xedb88320:0);}
   return (crc^0xffffffff)>>>0;
 }
+/** Validate reviewed opaque icons or scan UTF-8 source without exposing sensitive values. */
 export function checkPublicAsset(name,content) {
   if(!Object.hasOwn(ICON_SIZES,name))return checkPublicText(name,new TextDecoder('utf-8',{fatal:true}).decode(Buffer.from(content)));
   const bytes=Buffer.from(content),size=ICON_SIZES[name],fail=()=>{throw new Error(`Publication blocked: invalid opaque PNG icon ${name}`);};
@@ -35,6 +36,7 @@ export function checkPublicAsset(name,content) {
   try{pixels=inflateSync(Buffer.concat(data),{maxOutputLength:expected+1});}catch{fail();}
   if(pixels.length!==expected)fail();for(let row=0;row<size;row++)if(pixels[row*(1+size*3)]>4)fail();
 }
+/** Enforce public text size/line limits and reject common private-data patterns. */
 export function checkPublicText(name, content) {
   const rules = [
     ['private key', /-----BEGIN (?:RSA |EC |OPENSSH |DSA )?PRIVATE KEY-----/],
@@ -49,6 +51,9 @@ export function checkPublicText(name, content) {
   if (Buffer.byteLength(content) > 512 * 1024 || content.includes('\0')) {
     throw new Error(`Publication blocked: unexpected size or binary content in ${name}`);
   }
+  if(content.split('\n').length-(content.endsWith('\n')?1:0)>500) {
+    throw new Error(`Publication blocked: ${name} exceeds 500 physical lines`);
+  }
   for (const [category, pattern] of rules) {
     if (pattern.test(content)) throw new Error(`Publication blocked: ${category} in ${name}; values omitted`);
   }
@@ -60,6 +65,7 @@ export const PUBLIC_FILES = Object.freeze([
 ]);
 const root = fileURLToPath(new URL('../', import.meta.url));
 
+/** Validate the exact isolated public tree, file modes, contents and JavaScript syntax. */
 export function checkPublicTree(repository = root) {
   const entries = execFileSync('git', ['ls-files', '--stage', '-z'], {cwd: repository, encoding: 'utf8'})
     .split('\0').filter(Boolean);

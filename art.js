@@ -28,6 +28,7 @@ function portrait(speaker) {
   }
   portraits.set(speaker,image);return image;
 }
+/** Draw a cached original crew portrait for a readable menu exchange. */
 export function drawRadioPortrait(c,speaker) {c.clearRect(0,0,24,24);c.imageSmoothingEnabled=false;c.drawImage(portrait(speaker),0,0);}
 function crewmate(c,speaker,x,y,time) {
   // Colleagues stay in the scenery, outside the readable hazard silhouettes.
@@ -81,11 +82,13 @@ function limb(c,x,y,x2,y2,width,color) {
 function r(c,x,y,w,h,color){c.fillStyle=color;c.fillRect(Math.round(x),Math.round(y),w,h);}
 function txt(c,value,x,y,size,color){c.fillStyle=color;c.font=`${size}px monospace`;c.fillText(value,x,y);}
 function eye(c,x,y,size=1,color='#c7dc97',t=0){r(c,x-12*size,y-8*size,24*size,16*size,color);r(c,x-8*size,y-12*size,16*size,24*size,color);r(c,x-6*size,y-6*size,12*size,12*size,'#eff0ba');r(c,x+Math.sin(t)*2*size,y-5*size,5*size,10*size,'#192e38');}
+/** Resolve room metadata from a run without changing scenery between portals. */
 export function sectorFor(run){
   const id=sectorId(run);
   const data={crew:['PERSONNEL DECK','UNPAID EVACUATION','#29434c'],canteen:['MESS HALL','LUNCH HAS ESCAPED','#39483f'],lab:['BIO LAB','ETHICS PENDING','#263f43'],machine:['COMPLIANCE CORE','INDIVIDUALITY ARCHIVED','#18332e'],organic:['GUT TRANSIT','MIND THE SALIVA','#433447'],void:['POCKET DIMENSION','GEOMETRY OPTIONAL','#2c344c'],aquarium:['PELAGIC ANNEX','THE FISH HAVE TENURE','#233e49'],scrapyard:['WARRANTY MOON','ALL SALES FINAL','#443b36']}[id];
   return {id,name:data[0],caption:data[1],color:data[2]};
 }
+/** Draw cached walking/flying poses; travel is world distance and time is seconds. */
 export function drawCrew(c,x,y,thrust,scale,vy,time,weapon='ion',grounded=false,travel=0){
   c.save();c.translate(Math.round(x),Math.round(y));c.scale(scale,scale);
   if(!grounded)c.rotate(Math.max(-.09,Math.min(.1,vy*.00025)));
@@ -105,6 +108,7 @@ export function drawCrew(c,x,y,thrust,scale,vy,time,weapon='ion',grounded=false,
   }
   c.restore();
 }
+/** Draw hull wear, propulsion and the current mounted weapon in world coordinates. */
 export function drawShuttle(c,x,y,hull=3,thrust=false,time=0,vy=0,pickup=false,weapon='shuttle') {
   c.save();c.translate(Math.round(x),Math.round(y));c.rotate(Math.max(-.06,Math.min(.06,vy*.00015)));
   if(thrust){for(const dx of [-29,24]){const l=12+Math.sin(time*22+dx)*4;r(c,dx,23,7,l,'#b2c9a0');r(c,dx+2,25,3,l+5,'#e4d0a0');}}
@@ -141,23 +145,14 @@ export function drawShuttle(c,x,y,hull=3,thrust=false,time=0,vy=0,pickup=false,w
   }
   c.restore();
 }
+/** Draw the lab's inhabited window; crew rooms use the renderer's space view. */
 export function drawWorldWindow(c,x,y,w,h,sector,time){
-  if(['crew','canteen'].includes(sector.id))return false;
-  r(c,x,y,w,h,sector.id==='machine'?'#112b25':sector.id==='organic'?'#35243d':sector.id==='void'?'#1c233e':'#18392f');
-  if(sector.id==='machine'){
-    for(let a=0;a<7;a++)for(let b=0;b<5;b++){r(c,x+8+a*45,y+8+b*45,34,34,'#234536');r(c,x+12+a*45,y+12+b*45,26,3,'#71805c');r(c,x+14+a*45,y+22+b*45,4,9,(a+b)%3?'#3d6550':'#99c67b');}
-    for(let i=0;i<4;i++){const px=x+42+i*68,py=y+85+Math.sin(time+i)*10;r(c,px-18,py-15,36,30,'#152a2a');r(c,px-13,py-10,26,20,'#426d58');r(c,px-8,py-2,16,4,'#b9d79b');}
-  } else if(sector.id==='organic'){
-    for(let i=0;i<8;i++){const px=x+28+i*39,py=y+50+Math.sin(time*.6+i)*17;r(c,px-15,y,30,h,'#5d3b59');eye(c,px,py,1.2,i%2?'#bd9ac4':'#bad392',time+i);r(c,px-3,py+22,6,57,'#91808e');}
-    txt(c,'NEXT CUSTOMER: ALL OF YOU',x+24,y+h-24,9,'#d8c096');
-  } else if(sector.id==='void'){
-    for(let i=0;i<10;i++){const px=x+16+(i*71)%w,py=y+30+(i*47)%h+Math.sin(time*.5+i)*12;r(c,px,py,23,8,'#7e8293');r(c,px+4,py+8,15,5,'#d3b6b3');r(c,px+8,py+13,7,6,'#446b76');}
-    eye(c,x+w*.57,y+h*.43,3,'#c2b0c5',time*.4);
-  } else {
-    for(let i=0;i<3;i++){const px=x+24+i*99;r(c,px,y+16,71,h-37,'#577968');r(c,px+5,y+22,61,h-49,'#284e41');r(c,px+7,y+h-44,57,16,'#83b981');eye(c,px+36,y+89+Math.sin(time+i)*9,1.5,'#b5c98c',time+i);r(c,px+26,y+108,20,33,'#749d81');r(c,px+15,y+146,40,5,'#749d81');}
-  }
+  if(sector.id!=='lab')return false;
+  r(c,x,y,w,h,'#18392f');
+  for(let i=0;i<3;i++){const px=x+24+i*99;r(c,px,y+16,71,h-37,'#577968');r(c,px+5,y+22,61,h-49,'#284e41');r(c,px+7,y+h-44,57,16,'#83b981');eye(c,px+36,y+89+Math.sin(time+i)*9,1.5,'#b5c98c',time+i);r(c,px+26,y+108,20,33,'#749d81');r(c,px+15,y+146,40,5,'#749d81');}
   return true;
 }
+/** Populate stable ship rooms; other realms own their complete backgrounds. */
 export function drawSetDressing(c,W,scroll,sector,time){
   const off=(scroll*.33)%580;
   for(let x=-off-80;x<W+580;x+=580){
@@ -180,19 +175,12 @@ export function drawSetDressing(c,W,scroll,sector,time){
       r(c,x+335,397,49,29,'#8e9c81');r(c,x+342,392,35,5,'#334d4b');r(c,x+341,406,15,3,'#c0be93');r(c,x+374,409,5,8,'#bfd694');
       const bob=Math.sin(time*.6)*4;eye(c,x+361,371+bob,.65,'#b7c693',time*.4);r(c,x+351,383+bob,20,3,'#819e8d');
       txt(c,'DO NOT FEED IT TIME',x+284,480,7,'#b6b695');
-    }else if(sector.id==='machine'){
-      for(let i=0;i<5;i++){r(c,x+432,355+i*28,95,22,'#2c4a3c');r(c,x+439,362+i*28,5,8,'#a9c984');r(c,x+453,363+i*28,63,3,'#658369');}
-      txt(c,'YOU ARE A RESOURCE',x+266,485,9,'#9cba81');
-    }else if(sector.id==='organic'){
-      for(let i=0;i<4;i++){const px=x+438+i*25,py=430+Math.sin(time+i)*8;eye(c,px,py,.7,i%2?'#b7c284':'#a896bb',time);r(c,px-5,py+11,4,27,'#a986a5');r(c,px+6,py+11,4,24,'#a986a5');}
-      txt(c,'NO BITING IN THE QUEUE',x+257,485,8,'#d7bdab');
-    }else{
-      r(c,x+448,390+Math.sin(time)*9,69,12,'#9e94a5');r(c,x+467,365+Math.sin(time)*9,22,24,'#bec59e');txt(c,'LOST & UNFOUND',x+268,484,9,'#b9adc8');
     }
     // Small exposed circuits and taped-up repairs tie every room together.
     r(c,x+69,115,8,91,'#b9aa77');r(c,x+65,163,16,8,'#637f75');r(c,x+69,201,24,5,'#b9aa77');
   }
 }
+/** Animate a finite portal opening while preserving readable flight routes. */
 export function drawRift(c,x,y,color,label,realm,time){
   c.save();c.translate(Math.round(x),Math.round(y));
   c.fillStyle={organic:'#57334e',machine:'#214d39',aquarium:'#285969',scrapyard:'#65513f'}[realm] || '#343b69';c.beginPath();c.ellipse(0,0,29,PORTAL_RADIUS_Y-4,0,0,Math.PI*2);c.fill();
@@ -206,6 +194,7 @@ export function drawRift(c,x,y,color,label,realm,time){
   if(realm==='organic')eye(c,0,0,.8,'#c0b48e',time);else{r(c,-9,-21,18,42,'#c4df9e22');for(let i=0;i<3;i++)r(c,-6,-15+i*14,12,3,color+'99');}
   c.textAlign='center';txt(c,label,0,-91,8,color);c.textAlign='left';c.restore();
 }
+/** Draw a complete non-ship realm; return false for ship-room rendering. */
 export function drawDimension(c,W,scroll,sector,time){
   if(!['machine','organic','void','aquarium','scrapyard'].includes(sector.id))return false;
   r(c,0,0,W,600,sector.color);
@@ -264,6 +253,7 @@ function moonFace(c,x,y,radius,bites,age=0){
   else {r(c,-6,5,4,2,'#59615d');r(c,-2,3,4,2,'#59615d');r(c,2,5,4,2,'#59615d');}
   c.restore();
 }
+/** Draw the projectile's firing identity, including animated moon emotions. */
 export function drawShot(c,shot){
   const color=WEAPONS[shot.kind].color;
   if(shot.kind==='moon'){
@@ -277,6 +267,7 @@ export function drawShot(c,shot){
     r(c,-23,-12,9,24,'#809e9d');r(c,-24,-3,11,6,'#ffe7a1');c.restore();
   }else{r(c,shot.x-11,shot.y-2,17,4,color);r(c,shot.x-18,shot.y-1,8,2,'#8ebaaa');}
 }
+/** Draw a recognizable weapon pickup independently of collision or gunfire. */
 export function drawGear(c,gear){
   const {x,y,kind}=gear,weapon=WEAPONS[kind],color=weapon.color;
   r(c,x-27,y-23,54,46,'#172f3a');r(c,x-25,y-21,50,42,weapon.ammo?'#6a6960':'#42616b');
@@ -335,6 +326,7 @@ function drawScrapyard(c,W,scroll,time){
 
 // Deterministic vignettes are part of scenery, never simulation entities.
 // The tile identity varies with travel; animation never swaps the current room.
+/** Animate realm-specific background jokes outside the simulation hitboxes. */
 export function drawAmbient(c,W,scroll,sector,time){
   const travel=scroll*.28,first=Math.floor(travel/620)-1;
   c.save();c.beginPath();c.rect(0,125,W,401);c.clip();c.globalAlpha=.58;
@@ -382,6 +374,7 @@ export function drawAmbient(c,W,scroll,sector,time){
   c.restore();
 }
 
+/** Draw value/utility silhouettes using simulation time, without changing pickups. */
 export function drawLoot(c,loot,time) {
   const kind=loot.kind??'salvage',color=LOOT[kind].color;
   c.save();c.translate(loot.x,loot.y);c.scale(1+Math.sin(time*3+loot.phase)*.06,1+Math.sin(time*3+loot.phase)*.06);
