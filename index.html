@@ -19,7 +19,7 @@
       <h1 class="sr-only">exp3ndable</h1>
       <section class="game-frame" id="game-frame" aria-label="exp3ndable game">
         <div class="flight-deck" id="flight-deck">
-        <canvas id="game" aria-label="Side-scrolling spaceship escape. Hold the screen, Space, or Up arrow to fly. Release to fall. Avoid red hazards and collect Stillmatter to keep time stable."></canvas>
+        <canvas id="game" aria-label="Side-scrolling spaceship escape. Hold the screen, Space, Up arrow, or W to fly. Release to fall. Space also fires like a screen tap. Up arrow and W only fly; X only shoots. Avoid red hazards and collect Stillmatter to keep time stable."></canvas>
         <div class="hud">
           <div class="distance"><span class="hud-label">METERS <span id="run-mode">· Regular</span></span><strong id="distance">0000</strong><div class="vitals"><div class="health" id="health" role="status" aria-live="polite" aria-label="Health: 3 of 3"><span class="sr-only">Health</span><b class="health-pip" aria-hidden="true"></b><b class="health-pip" aria-hidden="true"></b><b class="health-pip" aria-hidden="true"></b></div><span id="hull-status" class="hull-status" role="status" aria-live="polite" hidden></span></div></div>
           <div class="salvage"><span class="salvage-icon">⬡</span><strong id="salvage">00</strong><span class="hud-label">STILLMATTER</span><span class="hud-best sr-only">BEST <strong id="best">0 m</strong></span>
@@ -36,7 +36,7 @@
             <div class="crew-chat" id="intro-chat" aria-label="Crew conversation"></div>
             <div class="start-actions"><fieldset class="difficulty-choice" id="difficulty-choice"><legend class="sr-only">Difficulty</legend><label><input type="radio" name="difficulty" value="regular" checked><span>Regular</span></label><label><input type="radio" name="difficulty" value="hard"><span>Hard</span></label></fieldset>
             <button class="primary-button" id="start">Play <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 19 19 5M5 5h14v14"/></svg></button></div>
-            <div class="control-hint"><span class="desktop-hint"><span class="key">SPACE</span> hold to fly · tap to fire · <span class="key">X</span> shoot</span><span class="touch-hint">Hold to fly · tap to fire</span></div>
+            <div class="control-hint"><span class="desktop-hint"><span class="key">SPACE</span> fly + fire · ↑ / W fly · <span class="key">X</span> fire</span><span class="touch-hint">Hold to fly · tap to fire</span></div>
           </div>
           <div class="end-card" id="end-card" hidden>
             <span class="sr-only" id="end-label">Shift ended</span>
@@ -46,7 +46,7 @@
             <button class="primary-button" id="restart">Again <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M19 8a8 8 0 1 0 1 8M19 2v6h-6"/></svg></button>
             <div class="end-links"><button class="text-button" id="back">Back</button><button class="text-button" id="scores-open">Scores</button></div>
           </div>
-          <div class="pause-card" id="pause-card" hidden><h2>On a break.</h2><div class="crew-chat" id="pause-chat" aria-label="Crew conversation"></div><button class="primary-button" id="resume">Resume <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 12h16m-7-7 7 7-7 7"/></svg></button><button class="text-button" id="paused-scores">Name & scores</button></div>
+          <div class="pause-card" id="pause-card" hidden><h2>On a break.</h2><div class="crew-chat" id="pause-chat" aria-label="Crew conversation"></div><button class="primary-button" id="resume">Resume <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 12h16m-7-7 7 7-7 7"/></svg></button><div class="end-links"><button class="text-button" id="paused-scores">Name & scores</button><button class="text-button" id="pause-restart">Restart</button></div></div>
           <div class="records-card" id="records-card" hidden>
             <h2>Scores</h2>
 
