@@ -2,6 +2,7 @@ import {isDifficulty} from './difficulty.js';
 
 const KEY = 'expendable.pilot';
 const DEFAULT_NAME = 'CREW-07';
+/** Normalize and bound a display name while rejecting control characters. */
 export function pilotName(value) {
   return [...String(value ?? '').normalize('NFKC').replace(/[\u0000-\u001f\u007f-\u009f]/g, '').replace(/\s+/g, ' ').trim()].slice(0, 12).join('') || DEFAULT_NAME;
 }
@@ -11,6 +12,7 @@ const validScore = score => score && typeof score.id === 'string' &&
 
 // One browser, no account or network. Storage failure never blocks a shift.
 export class PilotRecords {
+  /** Load remembered mode and separate score boards, tolerating unavailable storage. */
   constructor(storage) {
     this.storage = storage; this.name = DEFAULT_NAME; this.scores = []; this.persistent = false;
     this.difficulty='regular';this.bests={regular:0,hard:0};
@@ -31,9 +33,13 @@ export class PilotRecords {
     this.scores.sort((a,b) => b.distance - a.distance || b.salvage - a.salvage);
     this.scores=this.scores.filter(score=>++counts[score.difficulty]<=5);
   }
+  /** Return a mode-specific board without exposing the other mode's ranking. */
   scoresFor(difficulty){return this.scores.filter(score=>score.difficulty===difficulty);}
+  /** Read the selected mode's best distance with a safe invalid-mode fallback. */
   best(difficulty){return isDifficulty(difficulty)?this.bests[difficulty]:0;}
+  /** Persist the next-run choice without changing an active run. */
   setDifficulty(difficulty){if(!isDifficulty(difficulty))return;this.difficulty=difficulty;this.save();}
+  /** Persist session records; report storage failure without interrupting play. */
   save() {
     try {
       if (!this.storage) throw new Error('Storage unavailable');
@@ -41,12 +47,14 @@ export class PilotRecords {
       this.persistent = true;
     } catch { this.persistent = false; }
   }
+  /** Rename the pilot and optionally the current report, preserving older names. */
   setName(value, recordId) {
     this.name = pilotName(value);
     const score = this.scores.find(score => score.id === recordId);
     if (score) score.name = this.name;
     this.save();
   }
+  /** Record one completed run and retain five ranked entries per mode. */
   add(distance, salvage, difficulty=this.difficulty) {
     const score = { id: `${Date.now()}-${Math.random().toString(36).slice(2)}`, name: this.name, distance, salvage,difficulty };
     if (!validScore(score)||!isDifficulty(difficulty)) return null;

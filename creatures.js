@@ -17,13 +17,16 @@ export const CREATURE_ROSTERS=Object.freeze({
   aquarium:Object.freeze(['manta','jelly','spore','crab']),
   scrapyard:Object.freeze(['crab','mimic','hopper','drone'])
 });
+/** Identify catalogued creatures without accepting inherited object keys. */
 export const isCreature=type=>Object.hasOwn(CREATURES,type);
+/** Create a complete species snapshot and capture its initial scan lane. */
 export function makeCreature(type,x,rng,playerY) {
   const spec=CREATURES[type],baseY=215+rng()*210;
   return {type,x,y:baseY,baseY,w:spec.w,h:spec.h,hp:spec.hp,maxHp:spec.hp,
     phase:rng()*Math.PI*2,age:0,variant:Math.floor(rng()*3),
     targetY:playerY,drift:rng()<.5?-32:32};
 }
+/** Move one creature using world time while retaining readable corridor bounds. */
 export function moveCreature(o,dt,move,top,bottom) {
   const phase=o.phase??0,age=o.age;
   if(o.paired) {
