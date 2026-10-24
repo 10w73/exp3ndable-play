@@ -109,9 +109,9 @@ whether this was the approved route.
 
 ## Make yourself comfortable
 
-- **Sound starts muted.** Tap the speaker once for music, the air jet, and effects.
-  The music changes when you cross into a different dimension. On iPhone, turn
-  Silent Mode off to hear the game.
+- **Sound starts with Play.** Music, the air jet, and effects are enabled by default.
+  The speaker button remembers your mute choice. Music changes when you cross
+  into a different dimension. On iPhone, turn Silent Mode off to hear the game.
 - **Portrait or landscape.** Scenery fills the screen. HUD and menus stay clear of
   cutouts; a small translucent corner control leaves the world visible. You can
   hold elsewhere in the flight area too, or use a mouse or keyboard.

@@ -24,8 +24,8 @@ fitKeyboard();window.visualViewport?.addEventListener('resize',fitKeyboard);wind
 let W = 1200, mode = 'ready', run, held = false, keys = new Set(), pointers = new Set(), touches = new Set();
 let time = 0, last = 0, accumulator = 0, shake = 0, flash = 0, particles = [], damageTime = 0;
 const fx = new CombatFX();
-let best = 0, sound = false, soundState = 'off';
-try { sound = localStorage.getItem('expendable.sound') === '1'; } catch {}
+let best = 0, sound = true, soundState = 'off';
+try { sound = localStorage.getItem('expendable.sound') !== '0'; } catch {}
 let pilotStorage;
 try { pilotStorage = localStorage; } catch {}
 const pilot = new PilotRecords(pilotStorage);
