@@ -266,6 +266,12 @@ export class Run {
           this.reality = crossingY < this.portal.y ? 'low' : 'double'; this.realityTime = 10;
           // Worlds change at the portal crossing; only its physics/reward expires.
           this.realm=this.portal.realm;
+          // Only the traveller and carried equipment cross. Projectiles, queued
+          // attacks, hazards and uncollected objects belong to the world left behind.
+          this.shots=[];this.attacks=[];this.obstacles=[];this.coins=[];
+          this.gear=null;this.medkit=null;this.vehiclePickup=null;
+          this.events.length=0;
+          this.spawnIn=Math.max(this.spawnIn,1.6);this.coinIn=.35;
           if(this.realm==='ship')this.shipRoom=SHIP_ROOMS[(SHIP_ROOMS.indexOf(this.shipRoom)+1)%SHIP_ROOMS.length];
           this.events.push({type:'portal', reality:this.reality,realm:this.realm}); this.portal = null;
         }

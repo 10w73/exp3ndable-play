@@ -133,6 +133,7 @@ export class GameAudio {
   }
   tone(freq, duration, type, volume, at, destination, end) {
     const c = this.context, osc = c.createOscillator(), gain = c.createGain();
+    gain.gain.value=0;
     osc.type = type; osc.frequency.setValueAtTime(freq, at);
     if (end) osc.frequency.exponentialRampToValueAtTime(end, at + duration);
     gain.gain.setValueAtTime(0, at);
@@ -153,29 +154,30 @@ export class GameAudio {
     const at=this.context.currentTime+.005;
     const tone=(f,d,w,v,end,delay=0)=>this.tone(f,d,w,v,at+delay,this.weapons,end);
     const noise=(d,v,from,to,delay=0)=>this.noiseBurst(at+delay,d,v,from,to,this.weapons);
-    if(upgraded)tone(kind==='fork'?440:95,.18,'sine',.035,kind==='fork'?880:65,.02);
+    if(upgraded)tone(kind==='fork'?440:620,.18,'triangle',.035,kind==='fork'?880:310,.02);
     if(kind==='ion') {tone(1160,.14,'triangle',.27,680);noise(.025,.035,3800,1700);}
-    if(kind==='shuttle')tone(720,.13,'sine',.18,360);
+    if(kind==='shuttle'){tone(920,.15,'triangle',.24,460);tone(1840,.06,'sine',.035,920,.015);}
     if(kind==='pulse') {
-      tone(340,.28,'sine',.15,95);tone(820,.11,'sine',.065,1350,.06);
+      tone(340,.28,'triangle',.13,95);tone(820,.15,'sine',.095,1350,.015);
       noise(.09,.08,1100,280);
     }
     if(kind==='fork') {
-      noise(.12,.22,4600,1400);tone(880,.1,'triangle',.14,2300);
+      noise(.14,.24,4600,1400);tone(880,.14,'triangle',.17,2300);
       tone(1660,.07,'triangle',.07,740,.045);
     }
     if(kind==='moon') {
-      tone(190,.24,'sine',.155,365);tone(310,.19,'sine',.09,155,.065);
-      tone(580,.1,'triangle',.04,400,.14);
+      tone(190,.24,'triangle',.105,365);tone(310,.19,'sine',.06,155,.065);
+      tone(760,.16,'sine',.085,1100,.015);tone(580,.1,'triangle',.04,400,.14);
     }
     if(kind==='tape') {
       noise(.045,.3,3700,800);tone(140,.11,'triangle',.17,80);
-      tone(420,.055,'sine',.075,160);tone(210,.08,'triangle',.065,120,.065);
+      tone(880,.11,'triangle',.17,440);tone(210,.08,'triangle',.065,120,.065);
     }
     return true;
   }
   noiseBurst(at,duration,volume,from,to,destination=this.blasts) {
     const c=this.context,source=c.createBufferSource(),filter=c.createBiquadFilter(),cut=c.createBiquadFilter(),gain=c.createGain();
+    gain.gain.value=0;
     source.buffer=this.blastNoise;filter.type='lowpass';filter.Q.value=.55;
     filter.frequency.setValueAtTime(from,at);filter.frequency.exponentialRampToValueAtTime(to,at+duration);
     cut.type='highpass';cut.frequency.value=85;cut.Q.value=.5;
@@ -186,29 +188,42 @@ export class GameAudio {
     source.onended=()=>{source.disconnect();filter.disconnect();cut.disconnect();gain.disconnect();this.voices.delete(voice);};
     source.start(at);source.stop(at+duration+.02);
   }
-  explosion(kind,at) {
+  destruction(hazard,weapon) {
+    if(!this.running||this.mode==='paused')return false;
+    const t=this.context.currentTime,key=`destroy:${weapon}`,last=this.cueTimes.get(key)??-Infinity;
+    // One audible breakup represents a simultaneous chain/splash cluster.
+    // Future hits still get their own cue; gun voices never share this gate.
+    if(t-last<.045)return false;
+    this.cueTimes.set(key,t);
+    if(weapon==='tape')return this.cue('paperwork');
+    if(weapon==='fork')this.cue('arc-hit');
+    return this.explosion(hazard,undefined,['pulse','fork','moon'].includes(weapon)?.6:1);
+  }
+  explosion(kind,at,level=1) {
     if(!this.running||this.mode==='paused')return false;
     if([...this.voices].filter(v=>v.explosion).length>48)return false;
     kind=blastKind(kind);at ??= this.context.currentTime+.006;
-    const tone=(f,d,w,v,end,delay=0)=>this.tone(f,d,w,v,at+delay,this.blasts,end);
+    const tone=(f,d,w,v,end,delay=0)=>this.tone(f,d,w,v*level,at+delay,this.blasts,end);
+    const noise=(delay,d,v,from,to)=>this.noiseBurst(at+delay,d,v*level,from,to);
     if(kind==='shuttle') {
-      this.noiseBurst(at,.62,.72,2200,210);tone(135,.45,'sine',.38,48);tone(210,.23,'triangle',.13,70);
-      this.noiseBurst(at+.1,.27,.4,2700,350);this.noiseBurst(at+.23,.23,.32,1800,180);
+      noise(0,.62,.72,2200,210);tone(135,.45,'sine',.38,48);tone(210,.23,'triangle',.13,70);
+      noise(.1,.27,.4,2700,350);noise(.23,.23,.32,1800,180);
       tone(930,.09,'triangle',.055,270,.14);tone(650,.11,'sine',.055,180,.29);tone(880,.15,'sine',.04,220,.46);
     } else if(kind==='missile') {
-      this.noiseBurst(at,.36,.58,3400,220);tone(155,.25,'sine',.27,47);tone(270,.12,'triangle',.08,80);
-      this.noiseBurst(at+.06,.2,.2,1600,250);
+      noise(0,.36,.58,3400,220);tone(155,.25,'sine',.27,47);tone(270,.12,'triangle',.08,80);
+      noise(.06,.2,.2,1600,250);
     } else if(kind==='energy') {
-      this.noiseBurst(at,.22,.64,4100,700);tone(720,.19,'triangle',.25,150);tone(1380,.12,'sine',.10,390,.035);
-      this.noiseBurst(at+.065,.15,.24,2600,600);
+      noise(0,.22,.64,4100,700);tone(720,.19,'triangle',.25,150);tone(1380,.12,'sine',.10,390,.035);
+      noise(.065,.15,.24,2600,600);
     } else {
-      this.noiseBurst(at,.3,.64,2600,260);tone(220,.21,'triangle',.3,65);
+      noise(0,.3,.64,2600,260);tone(220,.21,'triangle',.3,65);
       tone(1850,.075,'sine',.055,680,.055);tone(970,.085,'triangle',.055,370,.13);
     }
     return true;
   }
   portal() {
     if(!this.running||this.mode==='paused')return false;
+    this.stopEffects();this.cueTimes.clear();
     const t=this.context.currentTime+.006;
     this.noiseBurst(t,.47,.42,450,3900,this.effects);
     this.tone(300,.38,'sine',.15,t,this.effects,1100);this.tone(720,.32,'triangle',.085,t+.06,this.effects,230);
@@ -222,9 +237,10 @@ export class GameAudio {
     this.cueTimes.set(kind,t);
     const tone=(f,d,w,v,end,delay=0)=>this.tone(f,d,w,v,t+delay,this.effects,end);
     if(kind==='moon-bounce'){tone(170,.15,'sine',.07,290);tone(340,.09,'sine',.025,230,.04);}
-    else if(kind==='moon-chomp')tone(340,.085,'triangle',.05,180);
-    else if(kind==='arc-hit'){this.noiseBurst(t,.075,.1,3400,1100,this.effects);tone(970,.06,'triangle',.045,390);}
-    else if(kind==='grav-pop'){tone(340,.12,'triangle',.045,140);tone(115,.23,'sine',.1,48);this.noiseBurst(t,.14,.13,900,170,this.effects);}
+    else if(kind==='moon-chomp'){tone(640,.105,'triangle',.09,260);this.noiseBurst(t,.045,.12,2400,900,this.effects);}
+    else if(kind==='arc-hit'){this.noiseBurst(t,.1,.16,3400,1100,this.effects);tone(970,.095,'triangle',.08,390);}
+    else if(kind==='grav-pop'){tone(680,.14,'triangle',.09,220);tone(115,.23,'sine',.09,48);this.noiseBurst(t,.14,.13,900,170,this.effects);}
+    else if(kind==='paperwork'){this.noiseBurst(t,.16,.22,3900,1200,this.effects);tone(760,.095,'triangle',.105,380);tone(1140,.07,'sine',.055,570,.055);}
     else if(kind==='weapon-empty')tone(310,.12,'triangle',.045,180);
     else if(kind==='coin')tone(760+(value%4)*100,.09,'sine',.045,620+(value%4)*100);
     else if(kind==='heal'){tone(540,.16,'sine',.08);tone(810,.22,'sine',.07,null,.075);}
@@ -247,6 +263,7 @@ export class GameAudio {
   }
   hat(at,destination=this.music,level=1) {
     const c = this.context, source = c.createBufferSource(), gain = c.createGain(), filter = c.createBiquadFilter(), smooth = c.createBiquadFilter();
+    gain.gain.value=0;
     source.buffer = this.noise; filter.type = 'highpass'; filter.frequency.value = 5500; filter.Q.value=.5;
     smooth.type='lowpass'; smooth.frequency.value=9500; smooth.Q.value=.5;
     gain.gain.setValueAtTime(0, at); gain.gain.linearRampToValueAtTime(.028*level,at+.004); gain.gain.exponentialRampToValueAtTime(.0001, at + .06);

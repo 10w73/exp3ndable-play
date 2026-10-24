@@ -80,7 +80,15 @@ function initAudio(confirm = false) {
 function fireWeapon() {
   if(mode!=='playing'||!run)return;
   const kind=run.firingWeapon,upgraded=!!run.vehicle&&kind!=='shuttle';
-  if(run.fire()){audio.weapon(kind,upgraded);if(run.firingWeapon!==kind)audio.cue('weapon-empty');}
+  if(!run.fire())return;
+  const firedRun=run,firedRealm=run.realm,empty=run.firingWeapon!==kind;
+  const play=()=>{
+    if(mode!=='playing'||run!==firedRun||run.realm!==firedRealm||!sound)return;
+    audio.weapon(kind,upgraded);if(empty)audio.cue('weapon-empty');
+  };
+  // Flight/shooting stays immediate; don't lose the onset while mobile audio resumes.
+  if(sound&&!audio.running){audio.setMode(mode);audio.enable().then(ready=>{if(ready)play();});}
+  else play();
 }
 function updateSound() {
   const on = sound && soundState === 'on';
@@ -423,7 +431,8 @@ function tick(dt) {
         if(event.type==='impact'){fx.impact(event.x,event.y);audio.cue('impact');}
         if(event.type==='destroy'){
           if(event.weapon==='tape')fx.paperwork(event.x,event.y);
-          else {fx.explode(event.x,event.y,['pulse','fork'].includes(event.weapon)?'energy':event.hazard);if(!['pulse','fork','moon'].includes(event.weapon))audio.explosion(event.hazard);else if(event.weapon==='fork')audio.cue('arc-hit');}
+          else fx.explode(event.x,event.y,['pulse','fork'].includes(event.weapon)?'energy':event.hazard);
+          audio.destruction(event.hazard,event.weapon);
           shake=Math.max(shake,event.hazard==='missile'?5:3);
         }
         if(event.type==='arc')fx.arc(event.points);
@@ -434,7 +443,7 @@ function tick(dt) {
         if(event.type==='gear'){speak('gear');audio.cue('gear');}
         if(event.type==='crash') finish(event.hazard);
         if(event.type==='portal-warning') {speak('warning');audio.cue('portal-warning');}
-        if(event.type==='portal') {flash=.18;shake=3;audio.setRealm(run.realm);audio.portal();speak({machine:'enterMachine',organic:'enterOrganic',void:'enterVoid',aquarium:'enterAquarium',scrapyard:'enterScrapyard',ship:'backShip'}[run.realm]);}
+        if(event.type==='portal') {fx.clear();particles=[];flash=.18;shake=3;audio.setRealm(run.realm);audio.portal();speak({machine:'enterMachine',organic:'enterOrganic',void:'enterVoid',aquarium:'enterAquarium',scrapyard:'enterScrapyard',ship:'backShip'}[run.realm]);}
         if(event.type==='normal') {speak('normal');audio.cue('normal');}
       }
     }

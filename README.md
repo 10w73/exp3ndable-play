@@ -28,7 +28,8 @@ that probably passed inspection in another dimension.
   creatures, and music.
 - **Portals are optional.** Fly through to travel, or go above or below to keep
   your current surroundings. The upper half gives low gravity; the lower half
-  doubles salvage for a short time.
+  doubles salvage for a short time. You and your equipment cross; fired moons,
+  enemies, and loose supplies stay behind.
 - **Five very bad ideas.** Fast ion bolts, Grav-pop bubbles, chaining Arc fork
   electricity, a 12-shot biting Pet Moon, or ten rounds of Red Tape. Empty special
   weapons hand you back the rifle. The paperwork says DENIED. It means it.
