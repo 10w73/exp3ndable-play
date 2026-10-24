@@ -1,13 +1,40 @@
+import {inflateSync} from 'node:zlib';
 import {execFileSync} from 'node:child_process';
 import {readFileSync, lstatSync} from 'node:fs';
 import {resolve} from 'node:path';
 import {fileURLToPath, pathToFileURL} from 'node:url';
 
 export const GAME_FILES = Object.freeze([
-  'arsenal.js', 'art.js', 'audio.js', 'dialogue.js', 'engine.js', 'fx.js',
-  'game.js', 'icon.svg', 'index.html', 'manifest.webmanifest', 'records.js',
+  'arsenal.js', 'art.js', 'creatures.js', 'creature-art.js', 'audio.js', 'dialogue.js', 'engine.js', 'fx.js',
+  'game.js', 'difficulty.js', 'apple-touch-icon.png', 'icon-192.png', 'icon-512.png', 'icon.svg', 'index.html', 'manifest.webmanifest', 'records.js',
   'style.css', 'sw.js'
 ]);
+export const ICON_SIZES=Object.freeze({'apple-touch-icon.png':180,'icon-192.png':192,'icon-512.png':512});
+function crc32(bytes) {
+  let crc=0xffffffff;
+  for(const byte of bytes){crc^=byte;for(let bit=0;bit<8;bit++)crc=(crc>>>1)^((crc&1)?0xedb88320:0);}
+  return (crc^0xffffffff)>>>0;
+}
+export function checkPublicAsset(name,content) {
+  if(!Object.hasOwn(ICON_SIZES,name))return checkPublicText(name,new TextDecoder('utf-8',{fatal:true}).decode(Buffer.from(content)));
+  const bytes=Buffer.from(content),size=ICON_SIZES[name],fail=()=>{throw new Error(`Publication blocked: invalid opaque PNG icon ${name}`);};
+  if(bytes.length>65536||bytes.length<57||!bytes.subarray(0,8).equals(Buffer.from([137,80,78,71,13,10,26,10])))fail();
+  let offset=8,header=false,ended=false;const data=[];
+  while(offset<bytes.length){
+    if(ended||offset+12>bytes.length)fail();const length=bytes.readUInt32BE(offset),end=offset+length+12;
+    if(end>bytes.length)fail();const kind=bytes.toString('ascii',offset+4,offset+8),chunk=bytes.subarray(offset+8,end-4);
+    if(crc32(bytes.subarray(offset+4,end-4))!==bytes.readUInt32BE(end-4))fail();
+    if(kind==='IHDR'){
+      if(header||offset!==8||length!==13||chunk.readUInt32BE(0)!==size||chunk.readUInt32BE(4)!==size||!chunk.subarray(8).equals(Buffer.from([8,2,0,0,0])))fail();header=true;
+    }else if(kind==='IDAT'){if(!header)fail();data.push(chunk);}
+    else if(kind==='IEND'){if(length||!data.length)fail();ended=true;}
+    else fail(); // No text, profiles, private metadata or arbitrary binary payloads.
+    offset=end;
+  }
+  if(!ended)fail();const expected=size*(1+size*3);let pixels;
+  try{pixels=inflateSync(Buffer.concat(data),{maxOutputLength:expected+1});}catch{fail();}
+  if(pixels.length!==expected)fail();for(let row=0;row<size;row++)if(pixels[row*(1+size*3)]>4)fail();
+}
 export function checkPublicText(name, content) {
   const rules = [
     ['private key', /-----BEGIN (?:RSA |EC |OPENSSH |DSA )?PRIVATE KEY-----/],
@@ -47,8 +74,8 @@ export function checkPublicTree(repository = root) {
   for (const name of names) {
     const path = resolve(repository, name);
     if (!lstatSync(path).isFile() || lstatSync(path).isSymbolicLink()) throw new Error(`Public release contains a non-regular file: ${name}`);
-    const content = new TextDecoder('utf-8', {fatal: true}).decode(readFileSync(path));
-    checkPublicText(name, content);
+    const content=readFileSync(path);
+    checkPublicAsset(name,content);
     if (/\.m?js$/.test(name)) {
       try {
         execFileSync(process.execPath, ['--input-type=module', '--check'], {input: content, cwd: repository, stdio: ['pipe', 'pipe', 'pipe']});
