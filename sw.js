@@ -1,20 +1,13 @@
-const CACHE = 'exp3ndable-v26';
+const CACHE = 'exp3ndable-v27';
 const FILES = ['./', './index.html', './style.css', './game.js', './renderer.js', './engine.js', './difficulty.js', './arsenal.js', './creatures.js', './creature-art.js', './audio.js', './fx.js', './records.js', './checkpoint.js', './dialogue.js', './art.js', './icon.svg', './apple-touch-icon.png', './icon-192.png', './icon-512.png', './manifest.webmanifest'];
-self.addEventListener('install', event => { event.waitUntil(caches.open(CACHE).then(cache => cache.addAll(FILES.map(file => new Request(file, { cache:'reload' })))).then(() => self.skipWaiting())); });
+self.addEventListener('install', event => { event.waitUntil(caches.open(CACHE).then(cache => cache.addAll(FILES.map(file => new Request(file, { cache:'reload' }))))); });
 self.addEventListener('activate', event => {
   event.waitUntil((async () => {
     const keys = await caches.keys();
     const old = keys.filter(key => (key.startsWith('exp3ndable-') || key.startsWith('expendable-')) && key !== CACHE);
     await Promise.all(old.map(key => caches.delete(key)));
     await self.clients.claim();
-    // Refresh existing clients once so game modules and install metadata
-    // move to the new asset cache together.
-    if (old.length) {
-      const windows = await self.clients.matchAll({ type:'window' });
-      // Do not await navigation while activation is pending: the new page's
-      // fetch itself waits for activation to finish.
-      for (const client of windows) client.navigate(client.url).catch(() => {});
-    }
+    // Native waiting activation happens after old clients close. Never navigate a live run.
   })());
 });
 // Revalidate install metadata online; retain the last valid manifest offline.
