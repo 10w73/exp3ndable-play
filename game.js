@@ -1,17 +1,25 @@
-import { Run, HEIGHT, CEILING, FLOOR, MAX_HEALTH, pendulumPoints } from './engine.js';
+import { Run, HEIGHT, CEILING, FLOOR, MAX_HEALTH, LOOT, pendulumPoints } from './engine.js';
 import { GameAudio } from './audio.js';
 import { WEAPONS } from './arsenal.js';
+import {isCreature} from './creatures.js';
+import {drawCreature} from './creature-art.js';
 import { CombatFX } from './fx.js';
 import { PilotRecords } from './records.js';
 import { CrewRadio, CREW } from './dialogue.js';
-import {drawCrew,sectorFor,drawWorldWindow,drawSetDressing,drawRift,drawRealmDrone,drawDimension,drawRadioPortrait,drawShuttle,drawAmbient,drawShot,drawGear} from './art.js';
+import {drawCrew,sectorFor,drawWorldWindow,drawSetDressing,drawRift,drawDimension,drawRadioPortrait,drawShuttle,drawAmbient,drawShot,drawGear,drawLoot} from './art.js';
 
 const $ = id => document.getElementById(id);
 const canvas = $('game'), ctx = canvas.getContext('2d', { alpha:false });
 const frame = $('game-frame');
 const thrust = $('thrust');
-function fitViewport() { document.documentElement.style.setProperty('--app-height',`${Math.round(window.visualViewport?.height || innerHeight)}px`); }
-fitViewport(); window.visualViewport?.addEventListener('resize',fitViewport); window.addEventListener('resize',fitViewport);
+// Dynamic viewport units own game geometry. VisualViewport is used only to
+// keep the name form inside the on-screen keyboard's visible rectangle.
+function fitKeyboard() {
+  const viewport=window.visualViewport;if(!viewport)return;
+  document.documentElement.style.setProperty('--keyboard-height',`${Math.round(viewport.height)}px`);
+  document.documentElement.style.setProperty('--keyboard-top',`${Math.round(viewport.offsetTop)}px`);
+}
+fitKeyboard();window.visualViewport?.addEventListener('resize',fitKeyboard);window.visualViewport?.addEventListener('scroll',fitKeyboard);
 let W = 1200, mode = 'ready', run, held = false, keys = new Set(), pointers = new Set(), touches = new Set();
 let time = 0, last = 0, accumulator = 0, shake = 0, flash = 0, particles = [], damageTime = 0;
 const fx = new CombatFX();
@@ -36,7 +44,12 @@ const deaths = {
   missile:['Signed for.', 'Nobody remembers ordering a missile.'],
   pendulum:['Complicated swing.', 'Moss insists the maths was fine.'],
   jelly:['Peer reviewed.', 'The senior gill officer has some notes.'],
-  mimic:['Not a parcel.', 'Siv has cancelled the return label.']
+  mimic:['Not a parcel.', 'Siv has cancelled the return label.'],
+  auditor:['Audited.', 'Your molecules have failed the paperwork.'],
+  hopper:['Lunch break.', 'The lunch has declined to be eaten.'],
+  manta:['Ray of hope.', 'That was a very misleading name.'],
+  spore:['Coffee spill.', 'It was carrying that for someone.'],
+  crab:['Reclaimed.', 'Your warranty expired during impact.']
 };
 
 function crewChat(host, key) {
@@ -80,7 +93,15 @@ function initAudio(confirm = false) {
 function fireWeapon() {
   if(mode!=='playing'||!run)return;
   const kind=run.firingWeapon,upgraded=!!run.vehicle&&kind!=='shuttle';
-  if(run.fire()){audio.weapon(kind,upgraded);if(run.firingWeapon!==kind)audio.cue('weapon-empty');}
+  if(!run.fire())return;
+  const firedRun=run,firedRealm=run.realm,empty=run.firingWeapon!==kind;
+  const play=()=>{
+    if(mode!=='playing'||run!==firedRun||run.realm!==firedRealm||!sound)return;
+    audio.weapon(kind,upgraded);if(empty)audio.cue('weapon-empty');
+  };
+  // Flight/shooting stays immediate; don't lose the onset while mobile audio resumes.
+  if(sound&&!audio.running){audio.setMode(mode);audio.enable().then(ready=>{if(ready)play();});}
+  else play();
 }
 function updateSound() {
   const on = sound && soundState === 'on';
@@ -164,6 +185,7 @@ function takeHit(event) {
   speak('hit');
   for(let i=0;i<14;i++)burst(run.player.x,run.player.y,i%2?'#f2c771':'#ff826b',1.2);
   fx.impact(run.player.x,run.player.y);audio.cue('hit');
+  if(event.health===1)audio.scream();
 }
 $('start').addEventListener('click',start); $('restart').addEventListener('click',start);
 $('pause').addEventListener('click',pause); $('resume').addEventListener('click',pause);
@@ -329,12 +351,7 @@ function background(scroll,sector) {
   for(let x=-ribOff+650;x<W+150;x+=860){rect(x-9,CEILING,24,FLOOR-CEILING,'#10242b');rect(x-5,CEILING,9,FLOOR-CEILING,'#486268');rect(x+4,CEILING,6,FLOOR-CEILING,'#253f48');for(let y=130;y<FLOOR;y+=90)rect(x-4,y,8,3,'#8ba298');}
   const shade=ctx.createLinearGradient(0,0,0,HEIGHT);shade.addColorStop(0,'#0b1b2d55');shade.addColorStop(.45,'#071c2400');shade.addColorStop(1,'#0a1b2d66');ctx.fillStyle=shade;ctx.fillRect(0,0,W,HEIGHT);
 }
-function drawCoin(c) {
-  const pulse = 1 + Math.sin(time*3+c.phase)*.08;
-  ctx.save();ctx.translate(c.x,c.y);ctx.scale(pulse,pulse);
-  ellipse(0,0,17,17,'#f4c96c12');
-  ctx.fillStyle='#e6b65f';ctx.strokeStyle='#ffde8c';ctx.lineWidth=2;ctx.beginPath();for(let i=0;i<6;i++){const a=i*Math.PI/3-Math.PI/6;const x=Math.cos(a)*10,y=Math.sin(a)*10;i?ctx.lineTo(x,y):ctx.moveTo(x,y);}ctx.closePath();ctx.fill();ctx.stroke();bolt(0,0,.48,'#594a30');ctx.restore();
-}
+
 function player(x,y,thrust,scale=1,vy=0) { drawCrew(ctx,x,y,thrust,scale,vy,time,run?run.weapon:'ion',!!run&&!thrust&&run.player.y>=FLOOR-22.5&&Math.abs(vy)<5,run?.scroll || 0); }
 function laser(o) {
   const horizontal=o.type==='horizontal';
@@ -358,12 +375,8 @@ function drawObstacle(o,sector) {
     for(let i=0;i<4;i++)rect(o.x-12+i*7,o.y-20,4,3,i<o.hp?'#d7a184':'#466163');
     return;
   }
-  if(['drone','jelly','mimic'].includes(o.type) && drawRealmDrone(ctx,o,sector,time))return;
+  if(isCreature(o.type)){drawCreature(ctx,o,sector,time);return;}
   if(['laser','horizontal','spinner'].includes(o.type)) {laser(o);return;}
-  if(o.type==='drone') {
-    ctx.save();ctx.translate(o.x,o.y);ellipse(0,24,33,5,'#061c2322');rect(-29,-16,58,34,'#172a34',12);rect(-24,-13,48,28,'#b6bbb0',10);rect(-20,-7,40,13,'#344f58',5);ellipse(-9,-1,4,4,'#ff836c');ellipse(9,-1,4,4,'#ff836c');rect(-13,17,26,5,'#526d70',2);line(0,-16,0,-25,'#b7c4ac',3);ellipse(0,-27,4,4,'#ff8168');
-    const rotor=Math.sin(time*38)*9;line(-30,-15,-30,-5,'#8ca69d',3);line(30,-15,30,-5,'#8ca69d',3);line(-43,-16,-17+rotor,-16,'#c4d1b6',3);line(17-rotor,-16,43,-16,'#c4d1b6',3);ctx.restore();return;
-  }
   if(o.type==='crusher') {
     const x=o.x-o.w/2,y=o.y-o.h/2;rect(x-4,y-3,o.w+8,o.h+6,'#11252c',5);rect(x,y,o.w,o.h,'#64716b',4);rect(x+8,y+5,o.w-16,o.h-10,'#354b4c',2);
     for(let i=0;i<6;i++) {rect(x+13,y+11+i*23,o.w-26,7,'#a99763',1);rect(x+13,y+18+i*23,o.w-26,3,'#1b343c');}
@@ -384,7 +397,7 @@ function drawPortal(portal) {
 }
 function attract() {
   const x=W>750?W*.7:W*.76, y=HEIGHT*.55+Math.sin(time*1.9)*13;
-  for(let i=0;i<5;i++) drawCoin({x:x+95+i*40,y:y-37-Math.sin(i*.65)*65,phase:i*.4});
+  for(let i=0;i<5;i++)drawLoot(ctx,{x:x+95+i*40,y:y-37-Math.sin(i*.65)*65,phase:i*.4,kind:i===3?'data':'salvage'},time);
   if(W>700)laser({type:'laser',x:W*.93,y:200,h:115});
   // A little shuttle through the distant viewport.
   player(x,y,true,W>700?1.85:1.3,Math.sin(time)*70);
@@ -400,7 +413,9 @@ function tick(dt) {
     while(accumulator>=1/120 && mode==='playing') {
       run.update(1/120,held);accumulator-=1/120;
       for(const event of run.events) {
-        if(event.type==='coin') {for(let i=0;i<4;i++)burst(event.x,event.y,'#e9ce7e',.6);audio.cue('coin',run.salvage);}
+        if(event.type==='coin') {for(let i=0;i<4;i++)burst(event.x,event.y,LOOT[event.kind].color,.6);audio.cue(event.kind==='salvage'?'coin':'loot-'+event.kind,run.salvage);}
+        if(event.type==='loot-effect')fx.pickup(event.x,event.y,event.effect);
+        if(event.type==='cheer'){audio.cheer();fx.cheer(run.player.x,run.player.y);}
         if(event.type==='hit' && event.health>0)takeHit(event);
         if(event.type==='heal') {
           damageTime=2; $('hit-feedback').textContent='+1 health'; $('hit-feedback').classList.add('recovered');
@@ -416,25 +431,27 @@ function tick(dt) {
           fx.impact(event.x+20,event.y);if(event.hull>0)audio.cue('hull-hit');
         }
         if(event.type==='vehicle-break') {
-          shake=11;fx.explode(event.x,event.y,'shuttle');audio.explosion('shuttle');
+          shake=11;fx.explode(event.x,event.y,'shuttle');audio.explosion('shuttle');audio.scream();
           damageTime=2;$('hit-feedback').textContent='Still here.';$('hit-feedback').classList.add('recovered');
           speak('vehicleBreak');
         }
         if(event.type==='impact'){fx.impact(event.x,event.y);audio.cue('impact');}
         if(event.type==='destroy'){
           if(event.weapon==='tape')fx.paperwork(event.x,event.y);
-          else {fx.explode(event.x,event.y,['pulse','fork'].includes(event.weapon)?'energy':event.hazard);if(!['pulse','fork','moon'].includes(event.weapon))audio.explosion(event.hazard);else if(event.weapon==='fork')audio.cue('arc-hit');}
+          else fx.explode(event.x,event.y,['beam','fork'].includes(event.weapon)?'energy':event.hazard);
+          audio.destruction(event.hazard,event.weapon);
           shake=Math.max(shake,event.hazard==='missile'?5:3);
         }
         if(event.type==='arc')fx.arc(event.points);
         if(event.type==='stamp'){fx.stamp(event.x,event.y,event.width,event.upgraded);shake=Math.max(shake,3);}
-        if(event.type==='grav-pop'){fx.gravity(event.x,event.y);audio.cue('grav-pop');}
+        if(event.type==='torpedo-burst'){fx.impact(event.x,event.y);audio.cue('torpedo-burst');}
+        if(event.type==='beam')fx.beam(event.x,event.y,event.width,event.upgraded);
         if(event.type==='moon-bounce'||event.type==='moon-chomp'){fx.moon(event.x,event.y,event.type==='moon-bounce');audio.cue(event.type);}
         if(event.type==='missile-warning')audio.cue('missile-warning');
         if(event.type==='gear'){speak('gear');audio.cue('gear');}
         if(event.type==='crash') finish(event.hazard);
         if(event.type==='portal-warning') {speak('warning');audio.cue('portal-warning');}
-        if(event.type==='portal') {flash=.18;shake=3;audio.setRealm(run.realm);audio.portal();speak({machine:'enterMachine',organic:'enterOrganic',void:'enterVoid',aquarium:'enterAquarium',scrapyard:'enterScrapyard',ship:'backShip'}[run.realm]);}
+        if(event.type==='portal') {fx.clear();particles=[];flash=.18;shake=3;audio.setRealm(run.realm);audio.portal();speak({machine:'enterMachine',organic:'enterOrganic',void:'enterVoid',aquarium:'enterAquarium',scrapyard:'enterScrapyard',ship:'backShip'}[run.realm]);}
         if(event.type==='normal') {speak('normal');audio.cue('normal');}
       }
     }
@@ -446,6 +463,10 @@ function tick(dt) {
     if(held && Math.random()>.25) {const p=run.player;particles.push({x:p.x-14,y:p.y+24,vx:-60-Math.random()*110,vy:65+Math.random()*50,life:.3,max:.4,color:Math.random()>.5?'#f9d88c':'#f7916f',r:2+Math.random()*3});}
   }
   $('hit-feedback').hidden = mode !== 'playing' || damageTime <= 0;
+  const debt=Math.round(run?.entropy??0);
+  if(Number($('time-debt').value)!==debt)$('time-debt').value=debt;
+  $('time-label').textContent=run?.timeHold>0?'Time held':'Time debt';
+  $('time-debt').title=run?.timeHold>0?`Time held · ${Math.ceil(run.timeHold)}s`:'Collect Stillmatter to slow time down';
   if(!run)updateHealth();
   updateHull();
   audio.setMode(mode); audio.setThrust(mode==='playing' && held);
@@ -475,7 +496,7 @@ function render() {
   drawAmbient(ctx,W,scroll,sector,run?.elapsed ?? time);
   fx.drawBack(ctx);
   if(run) {
-    for(const c of run.coins)drawCoin(c);
+    for(const c of run.coins)drawLoot(ctx,c,time);
     for(const shot of run.shots)drawShot(ctx,shot);
     if(run.gear)drawGear(ctx,run.gear);
     if(run.medkit) {

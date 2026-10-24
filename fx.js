@@ -1,6 +1,9 @@
+import {isCreature} from './creatures.js';
+
 // Local, bounded pixel effects. No hitboxes, timers, or gameplay side effects.
 export const blastKind = kind => kind==='shuttle'?'shuttle':kind==='missile'?'missile':['laser','horizontal','spinner','pendulum','energy'].includes(kind)?'energy':'drone';
 const WARM=['#a84d43','#ee8250','#f6b45d','#ffe3a0'];
+const SLIME=['#456b65','#709c81','#aec59a','#d9d5aa'];
 const COOL=['#3c777f','#6db8b5','#b1e4ca','#eef3b9'];
 const disc=(c,x,y,r,color)=>{
   x=Math.round(x/2)*2;y=Math.round(y/2)*2;r=Math.max(2,Math.round(r/2)*2);c.fillStyle=color;
@@ -11,7 +14,9 @@ export class CombatFX {
   clear(){this.blasts=[];this.particles=[];this.toys=[];}
   arc(points){this.toys.push({kind:'arc',points,age:0,life:.22});this.trim();}
   stamp(x,y,width,upgraded=false){this.toys.push({upgraded,kind:'stamp',x,y,width,age:0,life:.55});this.trim();}
-  gravity(x,y){this.toys.push({kind:'gravity',x,y,age:0,life:.4});this.trim();}
+  beam(x,y,width,upgraded){this.toys.push({kind:'beam',x,y,width,upgraded,age:0,life:.24});this.trim();}
+  pickup(x,y,text){this.toys.push({kind:'caption',x,y,text,age:0,life:.8});this.trim();}
+  cheer(x,y){this.toys.push({kind:'caption',x,y,text:'woo!',age:0,life:.6});this.trim();}
   moon(x,y,bounce){this.toys.push({kind:'caption',x,y,text:bounce?'sorry.':'nom.',age:0,life:.55});this.trim();}
   paperwork(x,y){
     for(let i=0;i<7;i++)this.particles.push({kind:'paper',x,y,age:0,life:.85,vx:50-this.random()*140,vy:-35-this.random()*85,angle:0,spin:(i-3)*2,w:11,h:16,color:'#d6cbb2'});
@@ -22,7 +27,7 @@ export class CombatFX {
     this.sparks(x,y,5,COOL,100);this.trim();
   }
   explode(x,y,type){
-    const kind=blastKind(type),big=kind==='shuttle',energy=kind==='energy',palette=energy?COOL:WARM;
+    const kind=blastKind(type),big=kind==='shuttle',energy=kind==='energy',palette=['hopper','spore','jelly'].includes(type)?SLIME:energy||type==='auditor'||type==='manta'?COOL:WARM;
     const size=big?95:kind==='missile'?54:energy?43:42;
     const add=(dx,dy,scale,delay)=>this.blasts.push({x:x+dx,y:y+dy,size:size*scale,duration:big?.72:.47,age:-delay,seed:this.random()*6,palette,drift:big?.24:.6});
     if(big){add(-22,5,.7,0);add(17,-4,1,.1);add(-32,-13,.53,.23);}
@@ -33,7 +38,7 @@ export class CombatFX {
       this.particles.push({kind:'smoke',x:x+Math.cos(a)*d,y:y+Math.sin(a)*d,age:-(i%3)*.035,life:big?1.15:.7,vx:Math.cos(a)*28,vy:-20-this.random()*30,r:(big?14:8)+this.random()*9,color:i%2?'#697467':'#394e50'});
     }
     for(let i=0;i<(big?13:energy?5:8);i++) {
-      const angle=i*2.4,body=big?['mug','seat','nacelle','canopy','hull'][Math.min(i,4)]:kind==='drone'&&i===0?'lens':'hull';
+      const angle=i*2.4,body=big?['mug','seat','nacelle','canopy','hull'][Math.min(i,4)]:isCreature(type)&&i===0?['spore','auditor'].includes(type)?'mug':'eye':['hopper','spore','jelly'].includes(type)?'slime':kind==='drone'&&i===0?'lens':'hull';
       this.particles.push({kind:body,x:x+Math.cos(angle)*(big?28:9),y:y+Math.sin(angle)*12,age:0,life:big?1.45:.8,
         vx:i===0?150:i===1?-110:Math.cos(angle)*(100+this.random()*190),vy:-70-Math.abs(Math.sin(angle))*170,
         angle:this.random()*3,spin:(this.random()-.5)*10,w:(big?18:9)+this.random()*16,h:7+this.random()*10,color:i%2?'#a6b7a5':'#a78169'});
@@ -96,6 +101,8 @@ export class CombatFX {
       else if(p.kind==='seat'){c.fillStyle='#7b9f9a';c.fillRect(-7,-15,14,22);c.fillStyle='#b8b092';c.fillRect(-13,4,26,6);c.fillStyle='#9eada0';c.fillRect(-2,10,4,14);c.fillRect(-12,23,24,3);}
       else if(p.kind==='canopy'){c.fillStyle='#83bec677';c.fillRect(-13,-10,26,18);c.strokeStyle='#c0d9ce';c.lineWidth=2;c.strokeRect(-13,-10,26,18);c.beginPath();c.moveTo(-4,-10);c.lineTo(2,0);c.lineTo(-1,8);c.stroke();}
       else if(p.kind==='nacelle'){c.fillStyle='#63898c';c.fillRect(-19,-6,38,12);c.fillStyle='#b9ddc5';c.fillRect(-19,-5,7,10);c.fillStyle='#d18a6d';c.fillRect(9,-3,9,5);}
+      else if(p.kind==='slime'){disc(c,0,0,p.w*.4,p.color);}
+      else if(p.kind==='eye'){c.fillStyle='#dcd4b3';c.fillRect(-7,-7,14,14);c.fillStyle='#314a51';c.fillRect(-6,-3,6,7);}
       else if(p.kind==='lens'){c.fillStyle='#405b61';c.fillRect(-10,-7,20,14);c.fillStyle='#f1a080';c.fillRect(-5,-4,10,8);}
       else {c.fillStyle=p.color;c.fillRect(-p.w/2,-p.h/2,p.w,p.h);c.fillStyle='#d9ceaf';c.fillRect(-p.w/2,-p.h/2,p.w,2);c.fillStyle='#b75d59';c.fillRect(-p.w/2,1,p.w,3);}
       c.restore();
@@ -118,9 +125,13 @@ export class CombatFX {
         c.strokeStyle='#e0a28d';c.lineWidth=4;c.strokeRect(x-wide,y-25,wide*2,50);
         c.strokeRect(x-wide+6,y-19,wide*2-12,38);c.fillStyle='#e8b69a';c.font='bold 25px monospace';c.textAlign='center';c.fillText(toy.upgraded?'ALL DENIED':'DENIED',x,y+9);
         c.fillStyle='#b79580';c.fillRect(x-26,y-45,52,16);c.fillRect(x-9,y-62,18,18);
-      }else if(toy.kind==='gravity'){
-        c.strokeStyle='#ead2aa';c.lineWidth=4;
-        for(let i=0;i<2;i++){c.beginPath();c.arc(toy.x,toy.y,12+p*88-i*9,0,Math.PI*2);c.stroke();}
+      }else if(toy.kind==='beam'){
+        const h=(toy.upgraded?30:18)*(1-p*.45);
+        c.fillStyle='#e7954728';c.fillRect(toy.x,toy.y-h*1.8,toy.width,h*3.6);
+        c.fillStyle='#cb813e';c.fillRect(toy.x,toy.y-h,toy.width,h*2);
+        c.fillStyle='#f0b660';c.fillRect(toy.x,toy.y-h*.6,toy.width,h*1.2);
+        c.fillStyle='#ffe7ad';c.fillRect(toy.x,toy.y-3,toy.width,6);
+        disc(c,toy.x,toy.y,h*1.25,'#f8cd82');
       }else{
         c.fillStyle='#e6d5b4';c.font='bold 13px monospace';c.textAlign='center';c.fillText(toy.text,toy.x,toy.y-40-p*18);
       }
