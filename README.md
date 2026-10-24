@@ -25,17 +25,26 @@ that probably passed inspection in another dimension.
 
 - **Six places to be underqualified.** Your ship, Compliance Core, Gut Transit,
   Pocket Dimension, Pelagic Annex, and Warranty Moon. Each has its own scenery,
-  creatures, and music.
+  creatures, music, and a slightly different pull of gravity.
 - **Portals are optional.** Fly through to travel, or go above or below to keep
   your current surroundings. The upper half gives low gravity; the lower half
-  doubles salvage for a short time.
+  doubles salvage for a short time. You and your equipment cross; fired moons,
+  enemies, and loose supplies stay behind.
+- **Eight species with jobs to avoid.** Floating auditors, escaped rations,
+  three-eyed rays, coffee spores, scrap crabs, jellies, parcels with teeth,
+  and union cleaners. Each dimension has its own cast, with occasional squabbling pairs.
+- **Stillmatter holds time together.** Collect the gold bits, energy cells,
+  data cubes, and odd relics to lower the **Time debt** meter. Miss too much and
+  the corridor gradually speeds up. Regular collecting keeps a mellow cruise;
+  you don't need every piece. Every 50 collected credits earns a tiny woohoo.
 - **Five very bad ideas.** Fast ion bolts, Grav-pop bubbles, chaining Arc fork
   electricity, a 12-shot biting Pet Moon, or ten rounds of Red Tape. Empty special
   weapons hand you back the rifle. The paperwork says DENIED. It means it.
 - **One extremely borrowed shuttle.** Three hull points and a spectacular breakup.
   Pickups mount stronger weapons: twin orbs, five-target lightning, paired moons,
   or a bigger stamp. One tap spends one charge; ejection keeps the rest and your
-  crew health.
+  crew health. It handles a little heavier in each dimension, with enough
+  lift to fly everywhere.
 - **Mistakes are recoverable.** Three health points, medical pickups, a brief
   recovery shield, and a pace that eases up to a ceiling.
 - **A crew with opinions.** Anxious Pip, deadpan Siv, and recklessly scientific
@@ -66,13 +75,18 @@ keyboard focus, holding **Enter** also flies. Name entry keeps normal typing.
 missiles, cleaning drones, swinging lasers, floating jellies, and suspicious parcels
 are considerably less safe.
 
-**Take the supplies.** Gold salvage, medical packets, weapons, shuttles, and portals
+**Take the supplies.** Stillmatter, medical packets, weapons, shuttles, and portals
 are immune to your gunfire. Fly into them to collect or enter them.
 
 **A hit isn't the end.** On foot, it costs one health point, a quarter of your
 salvage rounded up, and your weapon. The brief shield gives you time to recover.
 Medical packets restore one health point, up to three. Shuttle hits use hull
 instead, protecting your health, salvage, carried weapon, and remaining charges.
+
+**Follow a trail.** Twelve gently curving formations give you different routes.
+Cells contain two credits, data cubes three, and relics five; gold bits hold one.
+They all stabilize time. Missing a stretch can be recovered from, and speed changes
+blend smoothly. Flight response and firing keep pace with the world.
 
 **Read the room.** Regular fire cannot clear solid bulkheads. A moon or Red Tape
 has other ideas. You can stay in a world you like by flying around the next portal. Nobody is checking

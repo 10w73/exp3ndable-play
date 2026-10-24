@@ -4,7 +4,7 @@ import {resolve} from 'node:path';
 import {fileURLToPath, pathToFileURL} from 'node:url';
 
 export const GAME_FILES = Object.freeze([
-  'arsenal.js', 'art.js', 'audio.js', 'dialogue.js', 'engine.js', 'fx.js',
+  'arsenal.js', 'art.js', 'creatures.js', 'creature-art.js', 'audio.js', 'dialogue.js', 'engine.js', 'fx.js',
   'game.js', 'icon.svg', 'index.html', 'manifest.webmanifest', 'records.js',
   'style.css', 'sw.js'
 ]);
