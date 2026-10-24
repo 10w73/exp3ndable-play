@@ -8,6 +8,7 @@ const line = (speaker, text) => ({speaker, text});
 const pip = text => line('pip', text), siv = text => line('siv', text), moss = text => line('moss', text);
 const exchanges = {
   start: [
+    [pip('Why is the corridor speeding up?'), siv('Collect the Stillmatter. Time is getting ideas.')],
     [pip('I booked the quiet shift.'), siv('This is the quiet shift.')],
     [pip('Should I log the explosion?'), siv('It has logged itself.')],
     [moss('Little errand. Grab the rifle. Ignore the second moon.'), pip('We had one moon when I clocked in.')]
