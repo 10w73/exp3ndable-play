@@ -15,17 +15,17 @@ const $=id=>{if(!nodes.has(id))nodes.set(id,document.getElementById(id));return 
 function write(id,property,value){const node=$(id);if(node[property]!==value)node[property]=value;}
 const canvas = $('game'), renderer=createRenderer(canvas);
 const frame = $('game-frame');
-const thrust = $('thrust');
-// The fixed viewport root owns game geometry. VisualViewport is used only to
+const thrust = $('thrust'), restartDialog=$('restart-dialog');
+// Native percentage layout owns game geometry. VisualViewport is used only to
 // keep the name form inside the on-screen keyboard's visible rectangle.
-/** Keep the name editor within VisualViewport; the game world uses CSS viewport units. */
+/** Keep the name editor within VisualViewport; without sizing or transforming the game root. */
 function fitKeyboard() {
   const viewport=window.visualViewport;if(!viewport)return;
   document.documentElement.style.setProperty('--keyboard-height',`${Math.round(viewport.height)}px`);
   document.documentElement.style.setProperty('--keyboard-top',`${Math.round(viewport.offsetTop)}px`);
 }
 fitKeyboard();window.visualViewport?.addEventListener('resize',fitKeyboard);window.visualViewport?.addEventListener('scroll',fitKeyboard);
-let W = 1200, mode = 'ready', run, held = false, keys = new Set(), pointers = new Set(), touches = new Set();
+let W = 1200, mode = 'ready', run, held = false, keys = new Set(), pointers = new Map();
 let time = 0, last = 0, accumulator = 0, shake = 0, flash = 0, particles = [], damageTime = 0;
 const fx = new CombatFX();
 let best = 0, sound = true, soundState = 'off';
@@ -135,12 +135,19 @@ $('sound').addEventListener('click', () => {
   updateSound(); try { localStorage.setItem('expendable.sound', sound ? '1' : '0'); } catch {}
 });
 
-function syncHeld() { held = keys.size > 0 || pointers.size > 0 || touches.size > 0; }
-function release() { held = false; keys.clear(); pointers.clear(); touches.clear(); audio.setThrust(false); }
+function syncHeld() { held = keys.size > 0 || pointers.size > 0; }
+/** End owned gestures before a menu/viewport transition; capture must not steal later UI taps. */
+function release() {
+  keys.clear();
+  for(const [id,target]of pointers)if(target.hasPointerCapture(id))target.releasePointerCapture(id);
+  pointers.clear();held=false;audio.setThrust(false);
+}
 function setOverlay(which) {
   write('overlay','hidden',!which);
   frame.classList.toggle('show-records', which === 'records-card');
   for (const name of ['intro','end-card','pause-card','records-card']) $(name).hidden = name !== which;
+  // Native controls change in the same transaction as menus, not a later animation frame.
+  updateThumb();
 }
 function updateHealth() {
   const health = run ? run.health : MAX_HEALTH;
@@ -174,12 +181,20 @@ function setPauseIcon(paused) {
   $('pause').innerHTML = `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="${paused ? 'm8 5 11 7-11 7V5' : 'M8 5v14M16 5v14'}"/></svg>`;
   $('pause').setAttribute('aria-label',paused?'Resume game':'Pause game'); write('pause','title',paused?'Resume game':'Pause game');
 }
-/** Freeze simulation and silence audio until an explicit resume gesture. */
+/** Pause is idempotent; Resume never starts, replaces or toggles a run. */
 function pause() {
-  if (mode === 'playing') { mode = 'paused'; release(); checkpoint.save(run); checkpointElapsed=0; speak(run.elapsed-lastRadioAt<12?lastRadioKey:(run.realm || 'crew')); setOverlay('pause-card'); setPauseIcon(true); $('resume').focus({preventScroll:true}); }
-  else if (mode === 'paused') { mode = 'playing'; setOverlay(null); setPauseIcon(false); accumulator = 0; if(sound)initAudio(); canvas.focus({preventScroll:true}); }
-  audio.setMode(mode);
+  if(mode!=='playing')return;
+  mode='paused';release();checkpoint.save(run);checkpointElapsed=0;
+  speak(run.elapsed-lastRadioAt<12?lastRadioKey:(run.realm||'crew'));
+  setOverlay('pause-card');setPauseIcon(true);audio.setMode(mode);$('resume').focus({preventScroll:true});
 }
+/** Continue the exact active run only after an explicit native action. */
+function resume() {
+  if(mode!=='paused'||restartDialog.open||frame.classList.contains('show-records'))return;
+  release();mode='playing';setOverlay(null);setPauseIcon(false);accumulator=0;
+  audio.setMode(mode);if(sound)initAudio();canvas.focus({preventScroll:true});
+}
+function togglePause(){if(mode==='paused')resume();else pause();}
 function finish(hazard) {
   mode = 'dead'; release(); checkpoint.clear(); shake = 13; flash = .4;
   const distance = Math.floor(run.distance), record = distance > best;
@@ -206,10 +221,13 @@ function takeHit(event) {
   fx.impact(run.player.x,run.player.y);audio.cue('hit');
   if(event.health===1)audio.scream();
 }
-// Every deliberate new run replaces the active checkpoint without posting an abandoned score.
-for(const id of ['start','restart','pause-restart'])$(id).addEventListener('click',start);
-$('pause').addEventListener('click',pause); $('resume').addEventListener('click',pause);
-$('back').addEventListener('click',() => { checkpoint.clear(); mode = 'ready'; run = null; release(); particles = []; fx.clear(); audio.setRealm('ship'); setOverlay('intro'); write('distance','textContent','0000'); write('salvage','textContent','00'); write('sector','textContent','Personnel deck'); speak('start'); $('start').focus({preventScroll:true}); });
+// Each command owns one legal transition; hidden/stale controls cannot reset a live shift.
+for(const [id,expected]of [['start','ready'],['restart','dead']])$(id).addEventListener('click',()=>{if(mode===expected)start();});
+$('pause-restart').addEventListener('click',()=>{if(mode==='paused'&&!restartDialog.open){restartDialog.returnValue='cancel';restartDialog.showModal();}});
+restartDialog.querySelector('form').addEventListener('submit',e=>{e.preventDefault();const confirmed=e.submitter?.value==='restart';restartDialog.close();if(confirmed&&mode==='paused')start();});
+restartDialog.addEventListener('close',()=>{if(mode==='paused')$('resume').focus({preventScroll:true});});
+$('pause').addEventListener('click',togglePause);$('resume').addEventListener('click',resume);
+$('back').addEventListener('click',() => { if(mode!=='dead')return; checkpoint.clear(); mode = 'ready'; run = null; release(); particles = []; fx.clear(); audio.setRealm('ship'); setOverlay('intro'); write('distance','textContent','0000'); write('salvage','textContent','00'); write('sector','textContent','Personnel deck'); speak('start'); $('start').focus({preventScroll:true}); });
 function renderRecords() {
   write('pilot-tag','textContent',pilot.name);
   $('score-list').replaceChildren();
@@ -252,44 +270,28 @@ $('pilot-name').addEventListener('blur', () => $('records-card').classList.remov
 $('fullscreen').addEventListener('click',async () => { try { if (document.fullscreenElement) await document.exitFullscreen(); else if (frame.requestFullscreen) await frame.requestFullscreen(); } catch {} });
 if (!frame.requestFullscreen) write('fullscreen','hidden',true);
 
-const isControl = target => target instanceof Element && target.closest('button, a, input, select, textarea');
-const isThrust = target => target instanceof Element && target.closest('#thrust');
-function clearSelection() { const selection = window.getSelection(); if(selection?.rangeCount)selection.removeAllRanges(); }
-frame.addEventListener('pointerdown', e => {
-  if ((isControl(e.target) && !isThrust(e.target)) || mode !== 'playing') return;
-  if(e.cancelable)e.preventDefault(); clearSelection(); pointers.add(e.pointerId); syncHeld();
-  fireWeapon();
-  try { (isThrust(e.target) ? thrust : canvas).setPointerCapture(e.pointerId); } catch {}
-  if(sound && !audio.running) initAudio();
-}, { passive:false });
-const pointerRelease = e => { pointers.delete(e.pointerId); syncHeld(); };
-window.addEventListener('pointerup',pointerRelease); window.addEventListener('pointercancel',pointerRelease);
-canvas.addEventListener('lostpointercapture',pointerRelease);
-thrust.addEventListener('lostpointercapture',pointerRelease);
-// Explicit non-passive touch handling covers Safari callouts and browsers that
-// deliver touch events differently from Pointer Events. Buttons keep native taps.
-frame.addEventListener('touchstart', e => {
-  if ((isControl(e.target) && !isThrust(e.target)) || mode !== 'playing') return;
-  if(e.cancelable)e.preventDefault(); clearSelection();
-  for(const touch of e.changedTouches)touches.add(touch.identifier);
-  fireWeapon();
-  syncHeld(); if(sound && !audio.running)initAudio();
-}, { passive:false });
-frame.addEventListener('touchmove', e => { if(touches.size && e.cancelable)e.preventDefault(); }, { passive:false });
-function touchRelease(e) {
-  const active = [...e.changedTouches].some(touch => touches.has(touch.identifier));
-  if(active && e.cancelable)e.preventDefault();
-  for(const touch of e.changedTouches)touches.delete(touch.identifier);
-  syncHeld();
+/** Flight owns only canvas/pad pointer streams; native menu buttons never bubble into flight. */
+function pointerDown(e) {
+  if(mode!=='playing'||e.button!==0)return;
+  e.preventDefault();
+  const selection=window.getSelection();if(selection?.rangeCount)selection.removeAllRanges();
+  pointers.set(e.pointerId,e.currentTarget);e.currentTarget.setPointerCapture(e.pointerId);
+  syncHeld();fireWeapon();if(sound&&!audio.running)initAudio();
 }
-window.addEventListener('touchend',touchRelease,{ passive:false });
-window.addEventListener('touchcancel',touchRelease,{ passive:false });
+const pointerRelease=e=>{pointers.delete(e.pointerId);syncHeld();};
+for(const surface of [canvas,thrust]) {
+  surface.addEventListener('pointerdown',pointerDown);
+  surface.addEventListener('lostpointercapture',pointerRelease);
+  for(const event of ['contextmenu','selectstart','dragstart'])surface.addEventListener(event,e=>e.preventDefault());
+}
+window.addEventListener('pointerup',pointerRelease);window.addEventListener('pointercancel',pointerRelease);
+// A changed layout orientation invalidates an in-progress gesture, never the run.
+matchMedia('(orientation:portrait)').addEventListener('change',()=>{release();pause();});
 const isEditing = target => target instanceof Element && target.closest('input, textarea, [contenteditable=true]');
-for(const event of ['contextmenu','selectstart','dragstart'])frame.addEventListener(event,e=>{if(!isEditing(e.target))e.preventDefault();});
 thrust.addEventListener('keydown',e=>{if(mode==='playing' && ['Space','Enter'].includes(e.code)){e.preventDefault();if(!e.repeat)fireWeapon();keys.add(e.code);syncHeld();if(sound&&!audio.running)initAudio();}});
 thrust.addEventListener('keyup',e=>{if(['Space','Enter'].includes(e.code)){e.preventDefault();keys.delete(e.code);syncHeld();}});
 window.addEventListener('keydown', e => {
-  if (isEditing(e.target)) return;
+  if (isEditing(e.target)||restartDialog.open) return;
   if (frame.classList.contains('show-records')) { if (e.code === 'Escape') closeRecords(); return; }
   if (['Space','ArrowUp','KeyW'].includes(e.code)) {
     // Space matches touch/click; Up/W give lift only, and X gives fire only.
@@ -297,11 +299,11 @@ window.addEventListener('keydown', e => {
     // Editable fields and the records menu retain ordinary keyboard behavior.
     e.preventDefault(); e.stopPropagation(); if(e.repeat) return;
     if (mode === 'ready' || mode === 'dead') start();
-    else if(mode === 'paused') pause();
+    else if(mode === 'paused') resume();
     if(mode === 'playing') { keys.add(e.code); syncHeld(); if(e.code==='Space')fireWeapon(); if(sound && !audio.running) initAudio(); }
     return;
   }
-  if ((e.code === 'Escape' || e.code === 'KeyP') && !e.repeat) pause();
+  if ((e.code === 'Escape' || e.code === 'KeyP') && !e.repeat) togglePause();
   if(e.code==='KeyX' && !e.repeat){e.preventDefault();fireWeapon();}
 }, {capture:true});
 window.addEventListener('keyup', e => {

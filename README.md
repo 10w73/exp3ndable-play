@@ -62,7 +62,7 @@ that probably passed inspection in another dimension.
 | Fly without firing | — | Hold **↑** or **W** |
 | Fall | Release | Release the flight key |
 | Fire | Tap / click the **Fly** pad or flight area | Tap **X** |
-| Restart a paused run | Pause, then tap **Restart** | **Tab** to **Restart**, then **Enter** |
+| Restart a paused run | Pause, tap **Restart**, then confirm | **Tab** to **Restart**, **Enter**, then confirm |
 | Pause / resume | Tap the pause button / **Resume** | Press **P** or **Esc** |
 | Music & sound | Tap the speaker button | Focus the speaker button with **Tab**, then press **Enter** |
 | Fullscreen | Tap the fullscreen button, when available | Focus it with **Tab**, then press **Enter** |
@@ -117,18 +117,23 @@ whether this was the approved route.
   into a different dimension. On iPhone, turn Silent Mode off to hear the game.
 - **Portrait or landscape.** Scenery fills the screen. HUD and menus stay clear of
   cutouts; a small translucent corner control leaves the world visible. You can
-  hold elsewhere in the flight area too, or use a mouse or keyboard.
+  hold elsewhere in the flight area too, or use a mouse or keyboard. Rotating pauses
+  your shift; tap **Resume** to continue.
 - **Your name, your scores.** Pick a pilot name and chase your personal best.
   Your name and top five runs in each mode stay in that browser; there is no shared leaderboard.
 - **Leave a shift, come back to it.** Pausing or switching away saves your active run.
   Reopening returns to the pause screen with your gear, health and progress intact;
   tap **Resume** when ready, or **Restart** to begin a fresh shift in the same mode.
-  Restart replaces the saved run and keeps your name, scores and sound preference.
+  Restart asks for confirmation, then replaces the saved run and keeps your name,
+  scores and sound preference.
   Flight also saves every three seconds as a fallback.
   Saves stay on that device and site; clearing browser data removes them.
 - **Take it offline.** After an online visit has finished loading, the game can
   reopen offline in a compatible browser. Add it to your Home Screen where supported;
   the app includes a dedicated iOS touch icon and raster install icons.
+- **Updates wait for your break.** After an online visit downloads an update, close
+  all game tabs and the Home Screen app, then reopen. An update never reloads
+  your active shift. Keep your site data to keep your saves.
 
 <sub>Some crew dialogue contains strong language. Management has declined to comment.</sub>
 

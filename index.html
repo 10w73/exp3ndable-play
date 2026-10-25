@@ -20,6 +20,7 @@
       <section class="game-frame" id="game-frame" aria-label="exp3ndable game">
         <div class="flight-deck" id="flight-deck">
         <canvas id="game" aria-label="Side-scrolling spaceship escape. Hold the screen, Space, Up arrow, or W to fly. Release to fall. Space also fires like a screen tap. Up arrow and W only fly; X only shoots. Avoid red hazards and collect Stillmatter to keep time stable."></canvas>
+        </div>
         <div class="hud">
           <div class="distance"><span class="hud-label">METERS <span id="run-mode">· Regular</span></span><strong id="distance">0000</strong><div class="vitals"><div class="health" id="health" role="status" aria-live="polite" aria-label="Health: 3 of 3"><span class="sr-only">Health</span><b class="health-pip" aria-hidden="true"></b><b class="health-pip" aria-hidden="true"></b><b class="health-pip" aria-hidden="true"></b></div><span id="hull-status" class="hull-status" role="status" aria-live="polite" hidden></span></div></div>
           <div class="salvage"><span class="salvage-icon">⬡</span><strong id="salvage">00</strong><span class="hud-label">STILLMATTER</span><span class="hud-best sr-only">BEST <strong id="best">0 m</strong></span>
@@ -57,11 +58,15 @@
           </div>
         </div>
         <div class="flight-hint" id="flight-hint" hidden>HOLD TO FLY <span>↑</span> RELEASE TO FALL</div>
-        </div>
         <div class="thumb-deck">
           <div class="thumb-copy"><strong id="thumb-instruction">Hold to rise</strong><span>Release to fall</span></div>
           <button id="thrust" class="thrust-pad" aria-label="Hold to fly. Tap to fire. Release to fall." aria-pressed="false" disabled><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m5 13 7-7 7 7M12 6v14"/></svg><span>Fly</span><small id="thrust-detail">Tap to fire</small></button>
         </div>
+        <dialog id="restart-dialog" class="restart-dialog" aria-labelledby="restart-title">
+          <h2 id="restart-title">Restart this shift?</h2>
+          <p>Your current progress will be replaced.</p>
+          <form method="dialog"><button class="text-button" value="cancel" autofocus>Keep playing</button><button class="primary-button" id="confirm-restart" value="restart">Restart</button></form>
+        </dialog>
       </section>
     </main>
   </div>
