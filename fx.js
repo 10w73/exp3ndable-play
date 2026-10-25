@@ -16,9 +16,9 @@ export class CombatFX {
   arc(points){this.toys.push({kind:'arc',points,age:0,life:.22});this.trim();}
   stamp(x,y,width,upgraded=false){this.toys.push({upgraded,kind:'stamp',x,y,width,age:0,life:.55});this.trim();}
   beam(x,y,width,upgraded){this.toys.push({kind:'beam',x,y,width,upgraded,age:0,life:.24});this.trim();}
-  pickup(x,y,text){this.toys.push({kind:'caption',x,y,text,age:0,life:.8});this.trim();}
-  cheer(x,y){this.toys.push({kind:'caption',x,y,text:'woo!',age:0,life:.6});this.trim();}
-  moon(x,y,bounce){this.toys.push({kind:'caption',x,y,text:bounce?'sorry.':'nom.',age:0,life:.55});this.trim();}
+  pickup(x,y){this.sparks(x,y,6,COOL,45);this.trim();}
+  cheer(x,y){this.sparks(x,y,6,WARM,60);this.trim();}
+  moon(x,y,bounce){this.sparks(x,y,bounce?2:3,COOL,30);this.trim();}
   paperwork(x,y){
     for(let i=0;i<7;i++)this.particles.push({kind:'paper',x,y,age:0,life:.85,vx:50-this.random()*140,vy:-35-this.random()*85,angle:0,spin:(i-3)*2,w:11,h:16,color:'#d6cbb2'});
     this.trim();
@@ -134,8 +134,6 @@ export class CombatFX {
         c.fillStyle='#f0b660';c.fillRect(toy.x,toy.y-h*.6,toy.width,h*1.2);
         c.fillStyle='#ffe7ad';c.fillRect(toy.x,toy.y-3,toy.width,6);
         disc(c,toy.x,toy.y,h*1.25,'#f8cd82');
-      }else{
-        c.fillStyle='#e6d5b4';c.font='bold 13px monospace';c.textAlign='center';c.fillText(toy.text,toy.x,toy.y-40-p*18);
       }
       c.restore();
     }

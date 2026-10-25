@@ -26,7 +26,7 @@ function fitKeyboard() {
 }
 fitKeyboard();window.visualViewport?.addEventListener('resize',fitKeyboard);window.visualViewport?.addEventListener('scroll',fitKeyboard);
 let W = 1200, mode = 'ready', run, held = false, keys = new Set(), pointers = new Map();
-let time = 0, last = 0, accumulator = 0, shake = 0, flash = 0, particles = [], damageTime = 0;
+let time = 0, last = 0, accumulator = 0, shake = 0, flash = 0, particles = [];
 const fx = new CombatFX();
 let best = 0, sound = true, soundState = 'off';
 try { sound = localStorage.getItem('expendable.sound') !== '0'; } catch {}
@@ -168,10 +168,10 @@ function updateHull() {
 /** Start a fresh fixed-mode run while retaining pilot, scores and sound preference. */
 function start() {
   checkpoint.clear(); // Abandon the old shift even if saving the fresh one fails.
-  lastScoreId = null; release(); run = new Run(W,Math.random,selectedDifficulty); mode = 'playing'; particles = []; fx.clear(); audio.setRealm('ship'); shake = 0; flash = 0; accumulator = 0; damageTime = 0;
-  updateHealth(); write('hit-feedback','hidden',true);
+  lastScoreId = null; release(); run = new Run(W,Math.random,selectedDifficulty); mode = 'playing'; particles = []; fx.clear(); audio.setRealm('ship'); shake = 0; flash = 0; accumulator = 0;
+  updateHealth();
   setOverlay(null); $('pause').disabled = false; setPauseIcon(false);
-  write('distance','textContent','0000'); write('salvage','textContent','00'); write('flight-hint','hidden',false);
+  write('distance','textContent','0000'); write('salvage','textContent','00');
   write('sector','textContent','Personnel deck');
   speak('start'); checkpoint.save(run); checkpointElapsed=0;
   if (sound) initAudio(true);
@@ -186,6 +186,10 @@ function pause() {
   if(mode!=='playing')return;
   mode='paused';release();checkpoint.save(run);checkpointElapsed=0;
   speak(run.elapsed-lastRadioAt<12?lastRadioKey:(run.realm||'crew'));
+  // Reading belongs to a deliberate pause, with no deadline or competing banter.
+  const portal=run.portal&&!run.portal.passed?run.portal:null;
+  write('portal-guide','hidden',!portal);write('pause-chat','hidden',!!portal);
+  if(portal)write('portal-destination','textContent',`Portal → ${portal.realm==='ship'?'Your ship':sectorFor({realm:portal.realm}).name}`);
   setOverlay('pause-card');setPauseIcon(true);audio.setMode(mode);$('resume').focus({preventScroll:true});
 }
 /** Continue the exact active run only after an explicit native action. */
@@ -207,16 +211,14 @@ function finish(hazard) {
   $('result-distance').innerHTML = `${distance}<small>m</small>`;
   write('result-salvage','textContent',run.salvage);
   $('result-best').innerHTML = `${best}<small>m</small>`; write('best','textContent',`${best} m`);
-  $('pause').disabled = true; write('flight-hint','hidden',true);
+  $('pause').disabled = true;
   for(let i = 0; i < 32; i++) burst(run.player.x,run.player.y, i % 2 ? '#ff826b':'#f7d190',1.8);
   audio.cue('death');
   setOverlay('end-card'); $('restart').focus({preventScroll:true});
   speak('end');
 }
 function takeHit(event) {
-  shake = 7; flash = .22; damageTime = 2.3;
-  $('hit-feedback').classList.remove('recovered');
-  write('hit-feedback','textContent',`−1 health${event.lost ? ` · −${event.lost} salvage` : ''}${event.lostWeapon?' · Weapon lost':''}`);
+  shake = 7; flash = .22;
   speak('hit');
   for(let i=0;i<14;i++)burst(run.player.x,run.player.y,i%2?'#f2c771':'#ff826b',1.2);
   fx.impact(run.player.x,run.player.y);audio.cue('hit');
@@ -283,12 +285,15 @@ const pointerRelease=e=>{pointers.delete(e.pointerId);syncHeld();};
 for(const surface of [canvas,thrust]) {
   surface.addEventListener('pointerdown',pointerDown);
   surface.addEventListener('lostpointercapture',pointerRelease);
-  for(const event of ['contextmenu','selectstart','dragstart'])surface.addEventListener(event,e=>e.preventDefault());
+  // Cancel Safari's native long-press recognizer; gameplay stays in Pointer Events.
+  surface.addEventListener('touchstart',e=>e.preventDefault(),{passive:false});
 }
 window.addEventListener('pointerup',pointerRelease);window.addEventListener('pointercancel',pointerRelease);
 // A changed layout orientation invalidates an in-progress gesture, never the run.
 matchMedia('(orientation:portrait)').addEventListener('change',()=>{release();pause();});
 const isEditing = target => target instanceof Element && target.closest('input, textarea, [contenteditable=true]');
+// Browser selection/callout defaults are app-wide; editing keeps native controls.
+for(const type of ['contextmenu','selectstart','dragstart'])document.addEventListener(type,e=>{if(!isEditing(e.target))e.preventDefault();},{capture:true});
 thrust.addEventListener('keydown',e=>{if(mode==='playing' && ['Space','Enter'].includes(e.code)){e.preventDefault();if(!e.repeat)fireWeapon();keys.add(e.code);syncHeld();if(sound&&!audio.running)initAudio();}});
 thrust.addEventListener('keyup',e=>{if(['Space','Enter'].includes(e.code)){e.preventDefault();keys.delete(e.code);syncHeld();}});
 window.addEventListener('keydown', e => {
@@ -327,31 +332,27 @@ function tick(dt) {
   for(const p of particles){p.x+=p.vx*dt;p.y+=p.vy*dt;p.vy+=100*dt;p.life-=dt;}particles=particles.filter(p=>p.life>0);
   if(mode!=='paused')fx.update(dt,mode==='playing'?run.speed:0);
   if(mode==='playing') {
-    damageTime = Math.max(0, damageTime - dt);
     accumulator+=dt;
     while(accumulator>=1/120 && mode==='playing') {
       run.update(1/120,held);accumulator-=1/120;
       for(const event of run.events) {
         if(event.type==='coin') {for(let i=0;i<4;i++)burst(event.x,event.y,LOOT[event.kind].color,.6);audio.cue(event.kind==='salvage'?'coin':'loot-'+event.kind,run.salvage);}
-        if(event.type==='loot-effect')fx.pickup(event.x,event.y,event.effect);
+        if(event.type==='loot-effect')fx.pickup(event.x,event.y);
         if(event.type==='cheer'){audio.cheer();fx.cheer(run.player.x,run.player.y);}
         if(event.type==='hit' && event.health>0)takeHit(event);
         if(event.type==='heal') {
-          damageTime=2; write('hit-feedback','textContent','+1 health'); $('hit-feedback').classList.add('recovered');
           for(let i=0;i<5;i++)burst(event.x,event.y,'#b9d5a1',.4);
           audio.cue('heal');
         }
         if(event.type==='vehicle-board') {
-          damageTime=2;write('hit-feedback','textContent','Shuttle boarded');$('hit-feedback').classList.add('recovered');
           speak('vehicleBoard');audio.cue('board');
         }
         if(event.type==='vehicle-hit') {
-          shake=4;damageTime=1.6;write('hit-feedback','textContent',`Hull ${event.hull}/3`);$('hit-feedback').classList.remove('recovered');
+          shake=4;
           fx.impact(event.x+20,event.y);if(event.hull>0)audio.cue('hull-hit');
         }
         if(event.type==='vehicle-break') {
           shake=11;fx.explode(event.x,event.y,'shuttle');audio.explosion('shuttle');audio.scream();
-          damageTime=2;write('hit-feedback','textContent','Still here.');$('hit-feedback').classList.add('recovered');
           speak('vehicleBreak');
         }
         if(event.type==='impact'){fx.impact(event.x,event.y);audio.cue('impact');}
@@ -379,11 +380,8 @@ function tick(dt) {
     if(mode==='playing'&&checkpointElapsed>=3){checkpoint.save(run);checkpointElapsed=0;}
     if(held && Math.random()>.25) {const p=run.player;particles.push({x:p.x-14,y:p.y+24,vx:-60-Math.random()*110,vy:65+Math.random()*50,life:.3,max:.4,color:Math.random()>.5?'#f9d88c':'#f7916f',r:2+Math.random()*3});}
   }
-  write('hit-feedback','hidden',mode !== 'playing' || damageTime <= 0);
   const debt=Math.round(run?.entropy??0);
   if(Number($('time-debt').value)!==debt)write('time-debt','value',debt);
-  write('time-label','textContent',run?.timeHold>0?'Time held':'Time debt');
-  write('time-debt','title',run?.timeHold>0?`Time held · ${Math.ceil(run.timeHold)}s`:'Collect Stillmatter to slow time down');
   if(!run)updateHealth();
   updateHull();
   audio.setMode(mode); audio.setThrust(mode==='playing' && held);
@@ -392,12 +390,9 @@ function tick(dt) {
 /** Refresh both live and recovered HUDs from the same simulation values. */
 function updateRunHud() {
   write('distance','textContent',String(Math.floor(run.distance)).padStart(4,'0'));write('salvage','textContent',String(run.salvage).padStart(2,'0'));
-  updateHealth();write('flight-hint','hidden',run.elapsed>5);
+  updateHealth();
   const destination=sectorFor(run);
-  const portal=run.portal&&!run.portal.passed?run.portal:null;
-  write('portal-guide','hidden',!portal);
-  if(portal)write('portal-destination','textContent',`Portal → ${portal.realm==='ship'?'Your ship':sectorFor({realm:portal.realm}).name}`);
-  write('sector','textContent',run.reality ? `${run.reality==='low'?'Low gravity':'Double salvage'} · ${Math.ceil(run.realityTime)}s` : destination.name.toLowerCase());
+  write('sector','textContent',destination.name.toLowerCase());
 }
 let thumbMode, thumbHeld, thumbWeapon, thumbVehicle, thumbAmmo;
 function updateThumb() {
@@ -410,7 +405,7 @@ function updateThumb() {
   thrust.disabled = mode !== 'playing';
   thrust.classList.toggle('held',active); thrust.setAttribute('aria-pressed',String(active));
   write('thumb-instruction','textContent',mode==='playing' ? active?'Release to fall':'Hold to rise' : mode==='paused'?'On a break' : mode==='dead'?'Another go?':'Hold to rise');
-  write('thrust-detail','textContent',ammo!==null?`${ammo} ${weapon==='moon'?'moons':'stamps'}`:weapon?'Tap to fire':'Release to fall');
+  write('thrust-detail','textContent',weapon?'Tap to fire':'Release to fall');
   write('gear-status','textContent',weapon?(vehicle&&weapon!=='shuttle'?WEAPONS[weapon].upgrade:WEAPONS[weapon].name)+(ammo!==null?` · ${ammo}`:''):'Unarmed');
   thrust.setAttribute('aria-label',weapon?'Hold to fly. Tap to fire. Release to fall.':'Hold to fly. Release to fall.');
 }
