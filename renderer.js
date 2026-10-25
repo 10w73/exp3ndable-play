@@ -109,10 +109,10 @@ export function createRenderer(canvas) {
     }
   }
   function drawPortal(portal) {
-    drawRift(ctx,portal.x,portal.y,'#acd1b3',sectorFor({realm:portal.realm}).name,portal.realm,time);
+    drawRift(ctx,portal.x,portal.y,'#acd1b3',portal.realm==='ship'?'Your ship':sectorFor({realm:portal.realm}).name,portal.realm,time);
     line(portal.x-22,portal.y,portal.x+22,portal.y,'#d8c6a966',1);
-    text('Float',portal.x,portal.y-26,9,'#d2e4c5','center');
-    text('Salvage ×2',portal.x,portal.y+32,8,'#d6c4d9','center');
+    text('↑ Low gravity',portal.x,portal.y-26,10,'#d2e4c5','center');
+    text('↓ Salvage ×2',portal.x,portal.y+32,10,'#d6c4d9','center');
   }
   function attract() {
     const x=W>750?W*.7:W*.76, y=HEIGHT*.55+Math.sin(time*1.9)*13;

@@ -4,7 +4,7 @@ import { WEAPONS } from './arsenal.js';
 import { CombatFX } from './fx.js';
 import { PilotRecords } from './records.js';
 import {DIFFICULTIES} from './difficulty.js';
-import { CrewRadio, CREW } from './dialogue.js';
+import { CrewRadio, CREW, shiftReport } from './dialogue.js';
 import {sectorFor,drawRadioPortrait} from './art.js';
 import {createRenderer} from './renderer.js';
 import {RunCheckpoint} from './checkpoint.js';
@@ -202,6 +202,7 @@ function finish(hazard) {
   best = pilot.best(run.difficulty);
   const [title,message] = deaths[hazard] || deaths.laser;
   write('end-title','textContent',title); write('end-message','textContent',message);
+  write('shift-report','textContent',shiftReport(run,sectorFor(run).name));
   write('end-label','textContent',record ? 'Personal best' : 'Shift ended');
   $('result-distance').innerHTML = `${distance}<small>m</small>`;
   write('result-salvage','textContent',run.salvage);
@@ -393,6 +394,9 @@ function updateRunHud() {
   write('distance','textContent',String(Math.floor(run.distance)).padStart(4,'0'));write('salvage','textContent',String(run.salvage).padStart(2,'0'));
   updateHealth();write('flight-hint','hidden',run.elapsed>5);
   const destination=sectorFor(run);
+  const portal=run.portal&&!run.portal.passed?run.portal:null;
+  write('portal-guide','hidden',!portal);
+  if(portal)write('portal-destination','textContent',`Portal → ${portal.realm==='ship'?'Your ship':sectorFor({realm:portal.realm}).name}`);
   write('sector','textContent',run.reality ? `${run.reality==='low'?'Low gravity':'Double salvage'} · ${Math.ceil(run.realityTime)}s` : destination.name.toLowerCase());
 }
 let thumbMode, thumbHeld, thumbWeapon, thumbVehicle, thumbAmmo;

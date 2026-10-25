@@ -27,7 +27,8 @@ that probably passed inspection in another dimension.
   Pocket Dimension, Pelagic Annex, and Warranty Moon. Each has its own scenery,
   creatures, music, and a slightly different pull of gravity.
 - **Portals are optional.** Fly through to travel, or go above or below to keep
-  your current surroundings. The upper half gives low gravity; the lower half
+  your current surroundings. An on-screen guide names the destination and explains
+  both halves before you reach the opening. The upper half gives low gravity; the lower half
   doubles salvage for a short time. You and your equipment cross; fired moons,
   enemies, and loose supplies stay behind.
 - **Eight species with jobs to avoid.** Floating auditors, escaped rations,
@@ -74,6 +75,13 @@ keep firing. **Space** behaves the same way. **↑** and **W** fly without shoot
 
 Use **Tab** and **Enter** for menu buttons. When the **Fly** button itself has
 keyboard focus, holding **Enter** also flies and fires once on press. Name entry keeps normal typing.
+
+## Your shift report
+
+Every ending includes time on duty, where your shift ended, and all Stillmatter
+gathered during that run—even if damage cost you some afterward. The crew's
+sign-off changes with your haul and final dimension. The coffee remains unresolved.
+Saved and resumed shifts keep the same facts for their report.
 
 ## Surviving your shift
 

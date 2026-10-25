@@ -27,6 +27,11 @@
           <label class="time-meter" for="time-debt"><span id="time-label">Time debt</span><meter id="time-debt" min="0" max="100" low="40" high="75" optimum="0" value="0" title="Collect Stillmatter to slow time down"></meter></label></div><div class="hud-actions"><button id="sound" class="icon-button" aria-label="Turn sound on" title="Turn sound on"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m11 5-6 4H2v6h3l6 4V5m5 4 6 6m0-6-6 6"/></svg></button><button id="pause" class="icon-button" aria-label="Pause game" title="Pause game" disabled><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5v14M16 5v14"/></svg></button><button id="fullscreen" class="icon-button fullscreen" aria-label="Toggle fullscreen" title="Fullscreen"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9V4h5m6 0h5v5m0 6v5h-5m-6 0H4v-5"/></svg></button></div>
           <span class="audio-status sr-only" id="audio-status" role="status" aria-live="polite">SOUND OFF</span>
         </div>
+        <div class="portal-guide" id="portal-guide" role="status" hidden>
+          <strong id="portal-destination"></strong>
+          <span>Upper: low gravity · Lower: salvage ×2 · 10s</span>
+          <span>Fly above or below the opening to stay here</span>
+        </div>
         <div class="sector-label" id="sector">Personnel deck</div>
         <div class="gear-status" id="gear-status">Ion rifle</div>
         <div class="hit-feedback" id="hit-feedback" role="status" aria-live="polite" hidden></div>
@@ -43,6 +48,7 @@
             <span class="sr-only" id="end-label">Shift ended</span>
             <h2 id="end-title">A brief career.</h2>
             <p id="end-message" class="sr-only">Your replacement has been notified.</p><div class="crew-chat" id="end-chat" aria-label="Crew conversation"></div>
+            <p class="shift-report" id="shift-report"></p>
             <div class="results"><div><span>DISTANCE</span><strong id="result-distance">0<small>m</small></strong></div><div><span>STILLMATTER</span><strong id="result-salvage">0</strong></div><div><span>PERSONAL BEST</span><strong id="result-best">0<small>m</small></strong></div></div>
             <button class="primary-button" id="restart">Again <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M19 8a8 8 0 1 0 1 8M19 2v6h-6"/></svg></button>
             <div class="end-links"><button class="text-button" id="back">Back</button><button class="text-button" id="scores-open">Scores</button></div>
