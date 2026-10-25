@@ -105,3 +105,13 @@ export class CrewRadio {
   /** Report whether the current menu exchange still has a reply. */
   get hasReply() { return this.pending.length>0; }
 }
+
+
+/** Build a shift-specific sign-off from saved run facts; never invent visit history. */
+export function shiftReport(run, location) {
+  const seconds=Math.floor(run.elapsed),minutes=Math.floor(seconds/60);
+  const duration=`${minutes}:${String(seconds%60).padStart(2,'0')}`;
+  const collected=run.collectedSalvage;
+  const verdict=collected>=50?'Salvage hero. Coffee zero.':run.realm!=='ship'?'Wrong dimension. Same coffee break.':'The coffee can wait. Apparently forever.';
+  return `${duration} on duty · Last seen: ${location}. ${collected} Stillmatter gathered. ${verdict}`;
+}

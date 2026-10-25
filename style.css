@@ -60,3 +60,21 @@
 /* Only flight surfaces capture gestures; native buttons keep their own click delivery. */
 #game,#thrust{touch-action:none}button,a,input,select,textarea{touch-action:manipulation}
 .restart-dialog{max-width:min(380px,calc(100% - 48px));padding:24px;border:1px solid #526d62;border-radius:6px;background:#101b22;color:#edf0df}.restart-dialog::backdrop{background:#0b171dcc}.restart-dialog h2{font-size:24px;letter-spacing:-1px;margin:0 0 12px}.restart-dialog p{font:13px/1.6 Arial,sans-serif;color:#b5c5ba;margin:0 0 18px}.restart-dialog form{display:flex;align-items:center;gap:24px}.restart-dialog .primary-button{min-width:120px;min-height:44px}
+
+/* Portal guidance stays native and readable; scenery and aperture remain full bleed. */
+.portal-guide {
+  position:absolute;top:calc(var(--safe-top) + 88px);left:50%;transform:translateX(-50%);
+  width:max-content;max-width:calc(100% - var(--safe-left) - var(--safe-right) - 32px);
+  padding:8px 12px;border:1px solid #8ca89266;border-radius:4px;background:#101b22ed;
+  color:#cdddc8;font:11px/1.5 'Courier New',monospace;text-align:center;pointer-events:none;
+}
+.portal-guide strong,.portal-guide span {display:block}
+.portal-guide strong {font-size:13px;color:#edf0df}
+.game-frame:not([data-mode="playing"]) .portal-guide {display:none}
+.end-card .shift-report {max-width:440px;margin:0 0 16px;font:12px/1.5 'Courier New',monospace;color:#cdddc8}
+@media(max-height:440px) {
+  .portal-guide {top:calc(var(--safe-top) + 64px);padding:4px 8px;font-size:9px}
+  .portal-guide strong {font-size:11px}
+  .end-card .shift-report {margin-bottom:8px;font-size:10px}
+  .end-card .crew-chat {margin-bottom:8px}
+}
