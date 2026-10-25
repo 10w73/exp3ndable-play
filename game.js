@@ -285,13 +285,17 @@ const pointerRelease=e=>{pointers.delete(e.pointerId);syncHeld();};
 for(const surface of [canvas,thrust]) {
   surface.addEventListener('pointerdown',pointerDown);
   surface.addEventListener('lostpointercapture',pointerRelease);
-  // Cancel Safari's native long-press recognizer; gameplay stays in Pointer Events.
-  surface.addEventListener('touchstart',e=>e.preventDefault(),{passive:false});
 }
 window.addEventListener('pointerup',pointerRelease);window.addEventListener('pointercancel',pointerRelease);
 // A changed layout orientation invalidates an in-progress gesture, never the run.
 matchMedia('(orientation:portrait)').addEventListener('change',()=>{release();pause();});
 const isEditing = target => target instanceof Element && target.closest('input, textarea, [contenteditable=true]');
+// Non-interactive copy and flight share native-default suppression. Buttons and
+// form controls retain native clicks, focus and editing; this never drives flight.
+document.addEventListener('touchstart',e=>{
+  const nativeAction=e.target instanceof Element&&e.target.closest('button,a[href],input,select,textarea,[contenteditable=true]');
+  if(e.target instanceof Element&&(e.target.closest('#game,#thrust')||!nativeAction))e.preventDefault();
+},{capture:true,passive:false});
 // Browser selection/callout defaults are app-wide; editing keeps native controls.
 for(const type of ['contextmenu','selectstart','dragstart'])document.addEventListener(type,e=>{if(!isEditing(e.target))e.preventDefault();},{capture:true});
 thrust.addEventListener('keydown',e=>{if(mode==='playing' && ['Space','Enter'].includes(e.code)){e.preventDefault();if(!e.repeat)fireWeapon();keys.add(e.code);syncHeld();if(sound&&!audio.running)initAudio();}});
@@ -419,4 +423,12 @@ if(recovered) {
   updateRunHud();audio.setRealm(run.realm);mode='playing';$('pause').disabled=false;canvas.tabIndex=0;pause();
 }
 requestAnimationFrame(loop);
-if('serviceWorker' in navigator) window.addEventListener('load',()=>navigator.serviceWorker.register('./sw.js',{updateViaCache:'none'}).then(registration=>registration.update()).catch(()=>{}));
+if('serviceWorker' in navigator) window.addEventListener('load',()=>{
+  navigator.serviceWorker.register('./sw.js',{updateViaCache:'none'}).then(registration=>{
+    // Revalidate on launch, return to the app, reconnection and long active sessions.
+    const check=()=>registration.update().catch(()=>{});
+    check();window.addEventListener('online',check);
+    document.addEventListener('visibilitychange',()=>{if(!document.hidden)check();});
+    setInterval(()=>{if(!document.hidden)check();},60000);
+  }).catch(()=>{});
+});

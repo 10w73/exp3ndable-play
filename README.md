@@ -156,3 +156,7 @@ whether this was the approved route.
 <sub>Please remain expendable.</sub>
 
 </div>
+
+Updates download while online and reload the app automatically once the complete
+release is ready. Your run is saved and reopens paused; press Resume to continue.
+Offline or failed downloads keep the installed version. No site-data clearing is needed.
