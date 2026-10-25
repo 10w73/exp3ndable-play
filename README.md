@@ -27,8 +27,8 @@ that probably passed inspection in another dimension.
   Pocket Dimension, Pelagic Annex, and Warranty Moon. Each has its own scenery,
   creatures, music, and a slightly different pull of gravity.
 - **Portals are optional.** Fly through to travel, or go above or below to keep
-  your current surroundings. An on-screen guide names the destination and explains
-  both halves before you reach the opening. The upper half gives low gravity; the lower half
+  your current surroundings. Pause while a portal approaches to read its destination
+  and routes at your own pace. The upper half gives low gravity; the lower half
   doubles salvage for a short time. You and your equipment cross; fired moons,
   enemies, and loose supplies stay behind.
 - **Eight species with jobs to avoid.** Floating auditors, escaped rations,
@@ -52,7 +52,9 @@ that probably passed inspection in another dimension.
 - **Mistakes are recoverable.** Three health points, medical pickups, a brief
   recovery shield, and a pace that eases up to a ceiling.
 - **A crew with opinions.** Anxious Pip, deadpan Siv, and recklessly scientific
-  Moss save their conversations for breaks. Keep an eye out for background nonsense.
+  Moss save their conversations for breaks. Flight stays clear of popup messages;
+  pickups and hits use small visual cues, sounds, and the existing meters.
+  Keep an eye out for background nonsense.
 
 ## Controls
 

@@ -103,7 +103,7 @@ export function createRenderer(canvas) {
     }
     if(o.type==='missile') {
       if(o.warning>0) {
-        if(Math.sin(time*16)>-.4){rect(W-42,o.y-18,30,36,'#633b3b',6);text('!',W-27,o.y+8,23,'#ff9879','center');line(W-80,o.y,W-52,o.y,'#ff826b88',2);}return;
+        rect(W-42,o.y-18,30,36,'#633b3b',6);text('!',W-27,o.y+8,23,'#ff9879','center');line(W-80,o.y,W-52,o.y,'#ff826b88',2);return;
       }
       ctx.save();ctx.translate(o.x,o.y);ctx.fillStyle='#f39a6d';ctx.beginPath();ctx.moveTo(26,-7);ctx.lineTo(54+Math.sin(time*60)*7,0);ctx.lineTo(26,8);ctx.fill();rect(-22,-11,49,22,'#b1bbaa',6);ctx.fillStyle='#ff8d74';ctx.beginPath();ctx.moveTo(-38,0);ctx.lineTo(-16,-12);ctx.lineTo(-16,12);ctx.fill();rect(16,-17,7,34,'#6d8380',2);text('HR',-6,4,9,'#273f47','center');ctx.restore();
     }
@@ -111,8 +111,8 @@ export function createRenderer(canvas) {
   function drawPortal(portal) {
     drawRift(ctx,portal.x,portal.y,'#acd1b3',portal.realm==='ship'?'Your ship':sectorFor({realm:portal.realm}).name,portal.realm,time);
     line(portal.x-22,portal.y,portal.x+22,portal.y,'#d8c6a966',1);
-    text('↑ Low gravity',portal.x,portal.y-26,10,'#d2e4c5','center');
-    text('↓ Salvage ×2',portal.x,portal.y+32,10,'#d6c4d9','center');
+    text('↑',portal.x,portal.y-26,12,'#d2e4c5','center');
+    text('×2',portal.x,portal.y+32,10,'#d6c4d9','center');
   }
   function attract() {
     const x=W>750?W*.7:W*.76, y=HEIGHT*.55+Math.sin(time*1.9)*13;
