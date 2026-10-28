@@ -1,7 +1,8 @@
+import {drawWorkplaces} from './workplace-art.js';
 import {HEIGHT,CEILING,FLOOR,pendulumPoints} from './engine.js';
 import {isCreature} from './creatures.js';
 import {drawCreature} from './creature-art.js';
-import {drawCrew,sectorFor,drawWorldWindow,drawSetDressing,drawRift,drawDimension,drawShuttle,drawAmbient,drawShot,drawGear,drawLoot} from './art.js';
+import {drawCrew,sectorFor,drawWorldWindow,drawRift,drawDimension,drawShuttle,drawShot,drawGear,drawLoot} from './art.js';
 
 /** Own Canvas rendering separately from input, DOM updates and fixed-step simulation. */
 export function createRenderer(canvas) {
@@ -37,7 +38,7 @@ export function createRenderer(canvas) {
     rect(x,y,w,h,'#0c202b',17);
     ctx.save();ctx.beginPath();ctx.roundRect(x+2,y+2,w-4,h-4,16);ctx.clip();
     const g=ctx.createLinearGradient(x,y,x+w,y+h);g.addColorStop(0,'#213a48');g.addColorStop(1,'#102431');ctx.fillStyle=g;ctx.fillRect(x,y,w,h);
-    stars(x,y,w,h,scroll); if(!drawWorldWindow(ctx,x,y,w,h,sector,time))planet(x+w*.62,y+h*.43,h*.29);
+    stars(x,y,w,h,scroll); if(!drawWorldWindow(ctx,x,y,w,h,sector,time))planet(((620-scroll*.045)%2800+2800)%2800-180,y+h*.43,h*.29);
     line(x+22,y+h-14,x+w-18,y+20,'#92c8c810',18);line(x+50,y+h,x+w+10,y+13,'#92c8c810',6);ctx.restore();
     rect(x+w*.48,y+1,7,h-2,'#304b59');rect(x,y+h*.7,w,5,'#304b59');
     for(const [bx,by] of [[x-5,y-4],[x+w+4,y-4],[x-5,y+h+4],[x+w+4,y+h+4]]) ellipse(bx,by,2,2,'#a5b6b4');
@@ -58,7 +59,6 @@ export function createRenderer(canvas) {
       line(x+40,126,x+40,492,'#46636a',8);line(x+40,126,x+40,492,'#253d45',4);
       rect(x+26,322,28,42,'#536963',4);bolt(x+40,343,.6,'#b8c78e');
     }
-    drawSetDressing(ctx,W,scroll,sector,time);
     // Structural ribs and ceiling utilities frame a clear flight lane.
     rect(0,0,W,CEILING,'#142630');rect(0,CEILING-17,W,17,'#425b60');rect(0,CEILING-8,W,4,'#829a8e');
     const topOff=(scroll*.65)%290;
@@ -139,7 +139,7 @@ export function createRenderer(canvas) {
       const scroll=run?run.scroll:time*45;
       const sector=sectorFor(run);
       background(scroll,sector);
-      drawAmbient(ctx,W,scroll,sector,run?.elapsed ?? time);
+      drawWorkplaces(ctx,W,scroll,sector,run?.elapsed ?? time);
       fx.drawBack(ctx);
       if(run) {
         for(const c of run.coins)drawLoot(ctx,c,time);

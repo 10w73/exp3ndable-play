@@ -39,7 +39,7 @@ that probably passed inspection in another dimension.
   the corridor gradually speeds up. Regular collecting keeps a mellow cruise;
   you don't need every piece. Every 50 collected credits earns a tiny woohoo.
 - **Six very bad ideas.** Fast ion bolts, a three-photon-torpedo spread, a thick
-  amber beam across the screen, chaining Arc fork electricity, a six-shot biting
+  amber beam ahead, chaining Arc fork electricity, a six-shot biting
   Pet Moon with nervous, angry, blinking faces, or five rounds of Red Tape. Empty special
   weapons hand you back the rifle. The paperwork says DENIED. It means it. Moons and stamps alternate in a rare
   pickup slot, once every eight offers.
@@ -54,7 +54,9 @@ that probably passed inspection in another dimension.
 - **A crew with opinions.** Anxious Pip, deadpan Siv, and recklessly scientific
   Moss save their conversations for breaks. Flight stays clear of popup messages;
   pickups and hits use small visual cues, sounds, and the existing meters.
-  Keep an eye out for background nonsense.
+  Workplaces tell their stories through slow visual comedy: giant coffee cups,
+  overqualified stamping machines, levitating office furniture and fish with desks.
+  There is no need to read background signs or interact with the scenery.
 
 ## Controls
 
@@ -116,6 +118,10 @@ credit. They all stabilize time, working harder when debt is high. Double salvag
 boosts your score without doubling time relief. Missing a stretch can be recovered from, and speed changes
 blend smoothly. Flight response and firing keep pace with the world.
 
+**Borrowed tools.** Guns and shuttle mounts wear taped repairs and service cables.
+Instant beams and paperwork have a finite forward reach; a wider screen provides
+more preview without an unlimited-range attack.
+
 **Read the room.** Regular fire cannot clear solid bulkheads. A moon or Red Tape
 has other ideas. The amber lance can cut through with repeated shots. You can stay in a world you like by flying around the next portal. Nobody is checking
 whether this was the approved route.
@@ -141,9 +147,9 @@ whether this was the approved route.
 - **Take it offline.** After an online visit has finished loading, the game can
   reopen offline in a compatible browser. Add it to your Home Screen where supported;
   the app includes a dedicated iOS touch icon and raster install icons.
-- **Updates wait for your break.** After an online visit downloads an update, close
-  all game tabs and the Home Screen app, then reopen. An update never reloads
-  your active shift. Keep your site data to keep your saves.
+- **Updates arrive automatically.** While online, the app downloads a complete
+  release before reloading. Your shift is saved and reopens paused. Failed or
+  offline downloads keep the installed version; keep your site data to keep saves.
 
 <sub>Some crew dialogue contains strong language. Management has declined to comment.</sub>
 
@@ -156,7 +162,3 @@ whether this was the approved route.
 <sub>Please remain expendable.</sub>
 
 </div>
-
-Updates download while online and reload the app automatically once the complete
-release is ready. Your run is saved and reopens paused; press Resume to continue.
-Offline or failed downloads keep the installed version. No site-data clearing is needed.

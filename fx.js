@@ -14,7 +14,7 @@ export class CombatFX {
   constructor(random=Math.random){this.random=random;this.clear();}
   clear(){this.blasts=[];this.particles=[];this.toys=[];}
   arc(points){this.toys.push({kind:'arc',points,age:0,life:.22});this.trim();}
-  stamp(x,y,width,upgraded=false){this.toys.push({upgraded,kind:'stamp',x,y,width,age:0,life:.55});this.trim();}
+  stamp(x,y,width,upgraded=false){this.toys.push({upgraded,kind:'stamp',x,y,width,age:0,life:.9});this.trim();}
   beam(x,y,width,upgraded){this.toys.push({kind:'beam',x,y,width,upgraded,age:0,life:.24});this.trim();}
   pickup(x,y){this.sparks(x,y,6,COOL,45);this.trim();}
   cheer(x,y){this.sparks(x,y,6,WARM,60);this.trim();}
@@ -126,7 +126,8 @@ export class CombatFX {
         c.fillStyle='#ad756a25';c.fillRect(toy.x,toy.y-height/2,toy.width,height);
         c.strokeStyle='#e0a28d';c.lineWidth=4;c.strokeRect(x-wide,y-25,wide*2,50);
         c.strokeRect(x-wide+6,y-19,wide*2-12,38);c.fillStyle='#e8b69a';c.font='bold 25px monospace';c.textAlign='center';c.fillText(toy.upgraded?'ALL DENIED':'DENIED',x,y+9);
-        c.fillStyle='#b79580';c.fillRect(x-26,y-45,52,16);c.fillRect(x-9,y-62,18,18);
+        // The tool retracts; its administrative defeat lingers briefly in place.
+        c.globalAlpha=(1-p)*Math.max(0,1-p*2);c.fillStyle='#b79580';c.fillRect(x-26,y-45,52,16);c.fillRect(x-9,y-62,18,18);
       }else if(toy.kind==='beam'){
         const h=(toy.upgraded?30:18)*(1-p*.45);
         c.fillStyle='#e7954728';c.fillRect(toy.x,toy.y-h*1.8,toy.width,h*3.6);

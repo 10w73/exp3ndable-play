@@ -130,15 +130,16 @@ export class Run {
   spawnObstacle() {
     // Keep the creature majority, but prevent long lotteries without a wall.
     if(!this.encounterBag.length) {
-      this.encounterBag=['creature','creature','creature','creature','fixture','wall'];
-      for(let i=this.encounterBag.length-1;i>0;i--) {
-        const j=Math.floor(this.rng()*(i+1));
-        [this.encounterBag[i],this.encounterBag[j]]=[this.encounterBag[j],this.encounterBag[i]];
-      }
-      const last=this.encounterBag.length-1;
-      if(this.lastEncounter==='wall'&&this.encounterBag[last]==='wall') {
-        [this.encounterBag[0],this.encounterBag[last]]=[this.encounterBag[last],this.encounterBag[0]];
-      }
+      // Small authored phrases retain the same four-creature/fixture/wall budget.
+      // Their beginnings leave a gentle read before the solid obstruction.
+      const phrases=[
+        ['creature','creature','fixture','creature','creature','wall'],
+        ['creature','fixture','creature','creature','wall','creature'],
+        ['creature','creature','wall','creature','creature','fixture']
+      ];
+      const room=REALMS.indexOf(this.realm)+(this.realm==='ship'?SHIP_ROOMS.indexOf(this.shipRoom):0);
+      this.encounterBag=[...phrases[(room+Math.floor(this.rng()*phrases.length)+(this.lastEncounter==='wall'?1:0))%phrases.length]].reverse();
+
     }
     const encounter=this.encounterBag.pop();
     this.lastEncounter=encounter;
@@ -256,10 +257,11 @@ export class Run {
     for(const attack of this.attacks) {
       if(attack.kind==='tape'||attack.kind==='beam') {
         const beam=attack.kind==='beam',radius=beam?(attack.upgraded?30:18):(attack.upgraded?192:96);
-        for(const o of this.obstacles)if(targetable(o)&&o.x>attack.originX&&o.x<this.width+35&&hazardTouches(o,o.x,attack.y,radius)) {
+        const reach=Math.min(this.width-attack.x,attack.upgraded?840:720);
+        for(const o of this.obstacles)if(targetable(o)&&o.x>attack.originX&&o.x<=attack.x+reach&&hazardTouches(o,o.x,attack.y,radius)) {
           this.damageHazard(o,beam?(attack.upgraded?5:3):Infinity,attack.kind);
         }
-        this.events.push({type:beam?'beam':'stamp',x:attack.x,y:attack.y,width:this.width-attack.x,upgraded:attack.upgraded});
+        this.events.push({type:beam?'beam':'stamp',x:attack.x,y:attack.y,width:reach,upgraded:attack.upgraded});
       } else {
         const points=[{x:attack.x,y:attack.y}],hit=new Set();
         for(let i=0;i<(attack.upgraded?5:WEAPONS.fork.links);i++) {
