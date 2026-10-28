@@ -30,7 +30,8 @@ function portrait(speaker) {
 }
 /** Draw a cached original crew portrait for a readable menu exchange. */
 export function drawRadioPortrait(c,speaker) {c.clearRect(0,0,24,24);c.imageSmoothingEnabled=false;c.drawImage(portrait(speaker),0,0);}
-function crewmate(c,speaker,x,y,time) {
+/** Draw an original colleague behind scenery glass, never as a simulation body. */
+export function drawColleague(c,speaker,x,y,time) {
   // Colleagues stay in the scenery, outside the readable hazard silhouettes.
   const coat=speaker==='siv'?'#5b8d99':speaker==='moss'?'#70836b':'#b75159';
   r(c,x-9,y-20,19,24,coat);if(speaker!=='moss'){r(c,x-9,y-20,19,4,'#263747');r(c,x-8,y-15,9,1,'#dfdeca');r(c,x+1,y-14,8,1,'#dfdeca');r(c,x+4,y-18,3,3,'#d6ba71');}r(c,x-11,y+4,8,14,'#263c49');r(c,x+4,y+4,8,14,'#31474b');
@@ -99,9 +100,12 @@ export function drawCrew(c,x,y,thrust,scale,vy,time,weapon='ion',grounded=false,
   c.drawImage(crewBitmap(grounded,frame,!!weapon),-36,-64);
   if(weapon){
     r(c,8,-12,32,8,'#172e3d');r(c,18,-15,16,4,'#829d9b');r(c,20,-11,21,3,'#b5cbb7');r(c,39,-10,6,5,'#6b9296');
+    // Tape, a service cable and mismatched casing make this a borrowed tool.
+    r(c,17,-15,5,18,'#b7a789');r(c,34,-13,4,13,'#b7a789');
+    r(c,12,-5,3,14,'#78988d');r(c,12,7,12,3,'#78988d');
     r(c,10,-6,5,8,'#304b58');r(c,7,-9,8,7,'#deb08a');r(c,1,-14,9,5,'#b75159');r(c,28,-7,7,4,'#deb08a');
     if(weapon==='torpedo'){r(c,13,-24,30,27,'#685e53');for(let i=0;i<3;i++){r(c,20,-21+i*9,26,6,WEAPONS.torpedo.color);r(c,42,-20+i*9,5,4,'#f2dfb5');}}
-    if(weapon==='beam'){r(c,12,-18,29,17,'#766a57');r(c,37,-22,11,25,WEAPONS.beam.color);r(c,46,-15,6,12,'#f5d793');}
+    if(weapon==='beam'){r(c,9,-21,31,23,'#766a57');r(c,17,-24,13,4,'#a4ae97');r(c,16,-14,13,6,'#3c5856');r(c,37,-22,11,25,WEAPONS.beam.color);r(c,46,-15,6,12,'#f5d793');}
     if(weapon==='fork'){r(c,18,-20,8,20,'#637b88');r(c,26,-21,22,5,WEAPONS.fork.color);r(c,26,0,22,5,WEAPONS.fork.color);}
     if(weapon==='moon')moonFace(c,34,-10,13,0,time);
     if(weapon==='tape'){r(c,15,-24,10,18,'#af9d7b');r(c,6,-9,42,13,'#b7776c');r(c,5,3,44,4,'#dfb29a');}
@@ -131,7 +135,8 @@ export function drawShuttle(c,x,y,hull=3,thrust=false,time=0,vy=0,pickup=false,w
   if(hull<2){r(c,-14,-8,10,7,'#596c68');r(c,-11,-7,2,5,'#c5966c');r(c,-39,23,3,8,'#ad9475');}
   if(!pickup&&weapon!=='shuttle'){
     const color=WEAPONS[weapon].color;
-    for(const side of [-1,1]){r(c,side*30-10,-7,20,7,color);r(c,side*30-8,-12,16,5,'#66838b');}
+    for(const side of [-1,1]){r(c,side*30-10,-7,20,7,color);r(c,side*30-8,-12,16,5,'#66838b');r(c,side*30-7,-16,4,22,'#b7a789');r(c,side*30+3,-13,4,18,'#b7a789');}
+    r(c,26,8,29,3,'#82998c');r(c,53,-4,3,15,'#82998c');
     if(weapon==='moon')moonFace(c,32,-8,15,0,time);
     if(weapon==='tape'){r(c,34,-18,10,18,'#b39d7f');r(c,22,-3,34,8,color);}
     if(weapon==='fork'){r(c,35,-19,21,4,color);r(c,35,1,21,4,color);}
@@ -151,34 +156,6 @@ export function drawWorldWindow(c,x,y,w,h,sector,time){
   r(c,x,y,w,h,'#18392f');
   for(let i=0;i<3;i++){const px=x+24+i*99;r(c,px,y+16,71,h-37,'#577968');r(c,px+5,y+22,61,h-49,'#284e41');r(c,px+7,y+h-44,57,16,'#83b981');eye(c,px+36,y+89+Math.sin(time+i)*9,1.5,'#b5c98c',time+i);r(c,px+26,y+108,20,33,'#749d81');r(c,px+15,y+146,40,5,'#749d81');}
   return true;
-}
-/** Populate stable ship rooms; other realms own their complete backgrounds. */
-export function drawSetDressing(c,W,scroll,sector,time){
-  const off=(scroll*.33)%580;
-  for(let x=-off-80;x<W+580;x+=580){
-    if(sector.id==='crew'){
-      // A junior crew member behind a service hatch, still refusing to clock out.
-      r(c,x+426,355,107,95,'#152a32');r(c,x+433,362,93,81,'#38565a');r(c,x+443,423,73,20,'#899e8d');
-      crewmate(c,'pip',x+458,409,time);crewmate(c,'siv',x+500,409,time);r(c,x+435,428,89,4,'#31474f');
-      r(c,x+270,126,137,23,'#c9bd8b');txt(c,'DECK 07 / TEMP STAFF',x+277,141,8,'#3b4941');
-      r(c,x+299,476,65,27,'#40534e');r(c,x+310,464,40,14,'#d6c19a');txt(c,'FORMS',x+308,493,7,'#b8c0a7');
-    }else if(sector.id==='canteen'){
-      r(c,x+431,355,94,130,'#263d3e');r(c,x+438,363,80,95,'#b1a67b');txt(c,'LUNCH?',x+453,379,9,'#293e3e');
-      eye(c,x+476,416,1.45,'#b4c278',time);r(c,x+451,457,55,17,'#142b31');
-      r(c,x+272,473,75,9,'#ba9f77');r(c,x+282,481,8,45,'#6b8577');r(c,x+330,481,8,45,'#6b8577');
-      r(c,x+286,454,13,18,'#d1cfa5');r(c,x+299,459,6,7,'#d1cfa5');r(c,x+288,451,10,4,'#abc786');
-    }else if(sector.id==='lab'){
-      for(let i=0;i<3;i++){r(c,x+437+i*28,386,19,67,'#54786b');r(c,x+440+i*28,391,13,54,'#acbd83');eye(c,x+447+i*28,416,.45,'#d8cb9c',time);}
-      r(c,x+430,451,98,16,'#2f4546');txt(c,'ETHICS: PENDING',x+431,483,9,'#c4b67f');
-      // An improvised reality engine, assembled from a toaster and bad judgement.
-      crewmate(c,'moss',x+283,429,time);r(c,x+306,427,98,7,'#a6997a');r(c,x+314,434,6,61,'#53716a');r(c,x+391,434,6,61,'#53716a');
-      r(c,x+335,397,49,29,'#8e9c81');r(c,x+342,392,35,5,'#334d4b');r(c,x+341,406,15,3,'#c0be93');r(c,x+374,409,5,8,'#bfd694');
-      const bob=Math.sin(time*.6)*4;eye(c,x+361,371+bob,.65,'#b7c693',time*.4);r(c,x+351,383+bob,20,3,'#819e8d');
-      txt(c,'DO NOT FEED IT TIME',x+284,480,7,'#b6b695');
-    }
-    // Small exposed circuits and taped-up repairs tie every room together.
-    r(c,x+69,115,8,91,'#b9aa77');r(c,x+65,163,16,8,'#637f75');r(c,x+69,201,24,5,'#b9aa77');
-  }
 }
 /** Animate a finite portal opening while preserving readable flight routes. */
 export function drawRift(c,x,y,color,label,realm,time){
@@ -240,7 +217,7 @@ function moonFace(c,x,y,radius,bites,age=0){
   r(c,-18,-12,36,24,'#57656b');r(c,-12,-18,24,36,'#57656b');
   r(c,-16,-11,32,22,'#e0d4b1');r(c,-11,-16,22,32,'#e0d4b1');
   r(c,-12,-9,6,5,'#aaa58e');r(c,7,-11,5,4,'#b9b499');r(c,5,8,7,4,'#b4ad94');
-  const mood=Math.floor(age*1.7)%3,blink=age%2.3>2.13;
+  const tired=age>4, mood=Math.floor(age*1.7)%3,blink=tired||age%2.3>2.13;
   const look=Math.round(Math.sin(age*3)*1.5);
   for(const px of [-9,4]){
     r(c,px,-5,5,blink?2:6,'#f2ecd0');
@@ -248,7 +225,8 @@ function moonFace(c,x,y,radius,bites,age=0){
   }
   if(mood===1){r(c,-10,-10,6,2,'#7b806f');r(c,-6,-8,3,2,'#7b806f');r(c,4,-8,3,2,'#7b806f');r(c,7,-10,4,2,'#7b806f');}
   else {r(c,-11,-10-mood,7,2,'#7b806f');r(c,4,-10+Math.round(Math.sin(age*4)),7,2,'#7b806f');}
-  if(bites||mood===1){r(c,-6,4,12,7,'#59615d');for(let i=0;i<3;i++)r(c,-5+i*4,4,2,2,'#f3ebce');}
+  if(tired){r(c,-5,5,10,2,'#59615d');}
+  else if(bites||mood===1){r(c,-6,4,12,7,'#59615d');for(let i=0;i<3;i++)r(c,-5+i*4,4,2,2,'#f3ebce');}
   else if(mood===0){r(c,-3,4,6,8,'#59615d');r(c,-1,6,2,4,'#323f42');}
   else {r(c,-6,5,4,2,'#59615d');r(c,-2,3,4,2,'#59615d');r(c,2,5,4,2,'#59615d');}
   c.restore();
@@ -263,8 +241,9 @@ export function drawShot(c,shot){
   if(shot.kind==='torpedo'){
     c.save();c.translate(shot.x,shot.y);c.rotate(Math.atan2(shot.vy,WEAPONS.torpedo.speed));
     r(c,-67,-4,49,8,'#d5854b33');r(c,-47,-2,29,4,'#f6c17b');
-    r(c,-19,-7,31,14,'#b16d55');r(c,-15,-5,29,10,'#f4bd82');r(c,11,-3,9,6,'#fff0ba');
-    r(c,-23,-12,9,24,'#809e9d');r(c,-24,-3,11,6,'#ffe7a1');c.restore();
+    // Pneumatic mail capsules, complete with a shipping label and taped seam.
+    r(c,-22,-9,39,18,'#9c8b73');r(c,-18,-7,30,14,'#c5b595');r(c,-12,-6,12,12,'#d2d1b3');
+    r(c,-9,-3,7,2,'#596e66');r(c,-9,1,5,2,'#596e66');r(c,6,-9,4,18,'#718c85');r(c,15,-5,7,10,'#e2d5a8');c.restore();
   }else{r(c,shot.x-11,shot.y-2,17,4,color);r(c,shot.x-18,shot.y-1,8,2,'#8ebaaa');}
 }
 /** Draw a recognizable weapon pickup independently of collision or gunfire. */
@@ -324,55 +303,6 @@ function drawScrapyard(c,W,scroll,time){
   }
 }
 
-// Deterministic vignettes are part of scenery, never simulation entities.
-// The tile identity varies with travel; animation never swaps the current room.
-/** Animate realm-specific background jokes outside the simulation hitboxes. */
-export function drawAmbient(c,W,scroll,sector,time){
-  const travel=scroll*.28,first=Math.floor(travel/620)-1;
-  c.save();c.beginPath();c.rect(0,125,W,401);c.clip();c.globalAlpha=.58;
-  for(let tile=first;tile*620-travel<W;tile++){
-    const x=tile*620-travel+150,variant=((tile%4)+4)%4;
-    const phase=(time*.17+variant*.23)%1;
-    const y=variant%2?461:407;
-    if(['crew','canteen','lab'].includes(sector.id)){
-      r(c,x-38,y-49,124,93,'#1a3039');r(c,x-32,y-43,112,81,'#314b53');
-      if(variant===0){
-        crewmate(c,'pip',x+8,y+14,time);const mugX=x+40+Math.sin(time)*8;
-        r(c,mugX,y-5,12,14,'#c1bea0');r(c,mugX+12,y-2,5,6,'#c1bea0');
-        r(c,x-25,y+29,94,5,'#8c9e8e');txt(c,'ZERO-G COFFEE',x-27,y-32,7,'#b0b8a2');
-      }else if(variant===1){
-        crewmate(c,'siv',x+42,y+13,time);r(c,x-23,y-4,31,22,'#849a8a');eye(c,x-8,y+1,.55,'#b3c09a',time);
-        const paper=phase*20;r(c,x-8+paper,y-18-paper,13,7,'#c0bfa1');txt(c,'FORM EATS FORM',x-27,y-32,7,'#b0b8a2');
-      }else if(variant===2){
-        crewmate(c,'moss',x+10,y+14,time);eye(c,x+51,y-8,1,'#aab68e',time);
-        r(c,x+45,y+3,12,25,'#7d9a81');r(c,x+34,y+16,34,4,'#7d9a81');txt(c,'INTERN OF THE MONTH',x-27,y-32,7,'#b0b8a2');
-      }else{
-        const bot=x-18+phase*58;r(c,bot,y+15,32,17,'#8a9b91');r(c,bot+6,y+19,5,4,'#b7bfa1');
-        for(let i=0;i<3;i++)r(c,x+43+Math.sin(time+i)*13,y-13+i*10,13,6,'#b3b49b');txt(c,'PAPERLESS BY FRIDAY',x-27,y-32,7,'#b0b8a2');
-      }
-    }else if(sector.id==='machine'){
-      r(c,x-32,y-53,126,88,'#254337');crewmate(c,'siv',x+48,y+12,time);
-      const paperY=y-19+phase*32;r(c,x-18,paperY,16,9,'#9fae89');r(c,x-25,y+13,45,24,'#668269');
-      txt(c,variant%2?'PLEASE WAIT FOREVER':'WE ASSIMILATE TONER',x-25,y-33,7,'#a5b390');
-    }else if(sector.id==='organic'){
-      eye(c,x+15,y-12,1.8,'#a5b98b',time*.6);r(c,x+1,y+10,28,24,'#997c90');
-      r(c,x+34,y-2,21,5,'#afa18e');r(c,x+46,y-12,8,10,'#bfb59a');txt(c,'LUNCH BREAK',x-22,y-45,7,'#c6b19f');
-    }else if(sector.id==='void'){
-      c.save();c.translate(x+15,y-6);c.rotate(Math.sin(time*.3)*.5);
-      r(c,-23,-17,46,34,'#75828b');r(c,-18,-12,36,24,'#334c5b');txt(c,'OUT',-10,3,10,'#bbb3b9');c.restore();
-      r(c,x-28,y+34,89,5,'#8b8a98');txt(c,'EXIT CURRENTLY AWAY',x-26,y-43,7,'#b7aabf');
-    }else if(sector.id==='aquarium'){
-      const bob=Math.sin(time+variant)*5;eye(c,x+15,y-16+bob,1.2,'#92b4a4',time);
-      r(c,x-8,y+3+bob,44,3,'#a9baaa');r(c,x+32,y-1+bob,12,9,'#c9b397');
-      txt(c,variant%2?'PEER REVIEW: BLUB':'SENIOR GILL OFFICER',x-34,y-47,7,'#b6c6b2');
-    }else{
-      r(c,x-25,y-18,63,38,'#7e7969');r(c,x-16,y-12,45,19,'#3d5257');
-      eye(c,x+6,y-3,.6,'#b6b992',time);r(c,x-21,y+20,7,12,'#aca081');r(c,x+25,y+20,7,12,'#aca081');
-      r(c,x+42,y-12,24,26,'#a49676');txt(c,variant%2?'RETIRED. STILL WORKING.':'CERTIFIED PRE-EXPLODED',x-35,y-40,7,'#bfb391');
-    }
-  }
-  c.restore();
-}
 
 /** Draw value/utility silhouettes using simulation time, without changing pickups. */
 export function drawLoot(c,loot,time) {
