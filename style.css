@@ -109,15 +109,24 @@
 .tutorial-card .text-button{min-height:44px;font-size:13px}
 #tutorial-leave{padding-block:6px}
 #tutorial-hint{display:none}
-.tutorial-card.practicing{width:min(100%,360px);padding:12px 16px;background:#101b22e8}
+.tutorial-card.practicing{display:flex;flex-wrap:wrap;gap:0 16px;width:min(100%,360px);padding:12px 16px;background:#101b22e8}
 .tutorial-card.practicing #tutorial-explanation{display:none}
-.tutorial-card.practicing #tutorial-hint{display:block;margin-top:6px;font-size:14px}
-.tutorial-card.practicing .tutorial-actions{display:inline-flex;margin-right:20px}
+.tutorial-card.practicing #tutorial-progress{display:none}
+.tutorial-card.practicing #tutorial-hint{display:block;order:0;flex-basis:100%;margin:0 0 8px;font-size:14px}
+.tutorial-card.practicing #tutorial-skill-progress{order:1}
+.tutorial-card.practicing .tutorial-heading{order:2}
+.tutorial-card.practicing .tutorial-actions{order:3;display:inline-flex;margin:0}
 .tutorial-focus:not(canvas){outline:2px solid var(--lime);outline-offset:5px;border-radius:4px}
 .tutorial-open .gear-status{display:block}
 .tutorial-marker{position:absolute;z-index:2;border:2px solid var(--lime);border-radius:12px;pointer-events:none;box-shadow:0 0 0 4px #101b2280}
+.tutorial-lane{position:absolute;inset-inline:0;z-index:1;border-block:1px dashed #c7d998a0;background:#c7d99812;pointer-events:none}
+#tutorial-skill-progress{display:block;width:100%;height:6px;margin:0 0 8px;accent-color:var(--lime)}
 @media(min-aspect-ratio:3/2){.tutorial-open .overlay{justify-content:flex-end}.tutorial-card{width:min(60%,520px)}}
 @media(max-height:440px){.intro-options{margin-top:7px}.tutorial-open .overlay{padding-top:calc(var(--safe-top) + 74px);padding-bottom:calc(var(--safe-bottom) + 20px)}.tutorial-card{padding:12px 16px;font-size:14px}.tutorial-card h2{font-size:20px;margin:6px 0 8px}}
-@media(max-height:580px){.tutorial-card{padding:12px 14px;font-size:14px;line-height:1.4}.tutorial-card p{margin-bottom:8px}.tutorial-card h2{font-size:20px;margin:6px 0 8px}}
+@media(max-height:580px){.tutorial-card{padding:12px 14px;font-size:14px;line-height:1.4}.tutorial-card p{margin-bottom:6px}.tutorial-card h2{font-size:20px;margin:4px 0 6px}}
 @media(max-height:440px){.tutorial-card{font-size:13px;line-height:1.35}.tutorial-card .tutorial-heading .text-button{min-height:32px;font-size:11px}.tutorial-card .primary-button{min-height:40px}}
 @media(max-height:440px){.tutorial-card:not(.practicing){width:min(100%,520px)}}
+@media(max-height:440px) and (orientation:landscape){
+ .tutorial-open:has(.tutorial-card.practicing) .overlay{justify-content:flex-start;padding-top:calc(var(--safe-top) + 8px);z-index:5}
+ .tutorial-card.practicing{width:min(420px,calc(100% - 112px))}
+}
