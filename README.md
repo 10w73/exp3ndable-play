@@ -89,6 +89,8 @@ Saved and resumed shifts keep the same facts for their report.
 
 ## Surviving your shift
 
+**Choose your language.** Use English or Deutsch on the start or Pause screen. English is the default; your choice is remembered on this device and does not affect your saved shift.
+
 **Choose your shift.** Regular is the more forgiving default. Hard keeps the
 tougher time-pressure balance. Your choice is remembered for the next run;
 scores and personal bests are separate. Earlier scores are kept under Hard.

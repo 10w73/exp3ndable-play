@@ -1,5 +1,5 @@
-const CACHE = 'exp3ndable-v34';
-const FILES = ['./', './index.html', './style.css', './game.js', './renderer.js', './engine.js', './difficulty.js', './arsenal.js', './creatures.js', './creature-art.js', './audio.js', './fx.js', './records.js', './checkpoint.js', './dialogue.js', './art.js', './workplace-art.js', './icon.svg', './apple-touch-icon.png', './icon-192.png', './icon-512.png', './manifest.webmanifest'];
+const CACHE = 'exp3ndable-v35';
+const FILES = ['./', './index.html', './style.css', './game.js', './renderer.js', './engine.js', './difficulty.js', './arsenal.js', './creatures.js', './creature-art.js', './audio.js', './fx.js', './records.js', './checkpoint.js', './dialogue.js', './art.js', './workplace-art.js', './language.js', './icon.svg', './apple-touch-icon.png', './icon-192.png', './icon-512.png', './manifest.webmanifest', './manifest.de.webmanifest'];
 self.addEventListener('install', event => {
   event.waitUntil((async()=>{
     const cache=await caches.open(CACHE);
@@ -42,7 +42,7 @@ async function manifestResponse(request) {
 self.addEventListener('fetch', event => {
   const url = new URL(event.request.url);
   if(event.request.method !== 'GET' || url.origin !== self.location.origin)return;
-  event.respondWith(url.pathname === new URL('./manifest.webmanifest', self.location).pathname
+  event.respondWith(['./manifest.webmanifest','./manifest.de.webmanifest'].some(path=>url.pathname===new URL(path,self.location).pathname)
     ? manifestResponse(event.request)
     : caches.match(event.request).then(cached => cached || fetch(event.request)));
 });

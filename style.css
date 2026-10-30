@@ -88,3 +88,8 @@
   .gear-status {font-size:clamp(10px,.65vw,12px)}
   .sector-label {font-size:clamp(9px,.6vw,11px)}
 }
+
+/* Language uses the existing compact, native radio treatment. */
+.language-choice{margin:14px 0 0}
+.language-choice label>span{padding:7px 12px}
+@media(max-height:440px){.language-choice{margin:7px 0 0}.language-choice label>span{padding:5px 10px}}

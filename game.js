@@ -1,3 +1,4 @@
+import {tr,getLanguage,setLanguage,translateShell} from './language.js';
 import { Run, HEIGHT, MAX_HEALTH, LOOT } from './engine.js';
 import { GameAudio } from './audio.js';
 import { WEAPONS } from './arsenal.js';
@@ -36,12 +37,12 @@ const pilot = new PilotRecords(pilotStorage), checkpoint=new RunCheckpoint(pilot
 let checkpointElapsed=0;
 let selectedDifficulty=pilot.difficulty,scoreDifficulty=selectedDifficulty;
 best=pilot.best(selectedDifficulty);write('best','textContent',`${best} m`);
-write('run-mode','textContent',`· ${DIFFICULTIES[selectedDifficulty].label}`);
+write('run-mode','textContent',`· ${tr(DIFFICULTIES[selectedDifficulty].label)}`);
 document.querySelector(`#difficulty-choice input[value="${selectedDifficulty}"]`).checked=true;
 document.querySelectorAll('#difficulty-choice input').forEach(input=>input.addEventListener('change',()=>{
   if(mode!=='ready'||!input.checked)return;
   selectedDifficulty=input.value;pilot.setDifficulty(selectedDifficulty);best=pilot.best(selectedDifficulty);
-  write('best','textContent',`${best} m`);write('run-mode','textContent',`· ${DIFFICULTIES[selectedDifficulty].label}`);
+  write('best','textContent',`${best} m`);write('run-mode','textContent',`· ${tr(DIFFICULTIES[selectedDifficulty].label)}`);
 }));
 document.querySelectorAll('#score-difficulty input').forEach(input=>input.addEventListener('change',()=>{scoreDifficulty=input.value;renderRecords();}));
 let lastScoreId = null;
@@ -75,7 +76,7 @@ function crewChat(host, key) {
     const face=document.createElement('canvas');face.width=24;face.height=24;face.setAttribute('aria-hidden','true');
     drawRadioPortrait(face.getContext('2d'),line.speaker);
     const name=document.createElement('span');name.textContent=CREW[line.speaker].name;name.style.color=CREW[line.speaker].color;
-    const words=document.createElement('p');words.textContent=line.text;
+    const words=document.createElement('p');words.textContent=tr(line.text);
     row.append(face,name,words);$(host).append(row);
   }
 }
@@ -122,11 +123,11 @@ function fireWeapon() {
 }
 function updateSound() {
   const on = sound && soundState === 'on';
-  const label = on ? 'Turn music and sound off' : 'Enable music and sound';
+  const label = tr(on ? 'Turn music and sound off' : 'Enable music and sound');
   $('sound').innerHTML = `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="m11 5-6 4H2v6h3l6 4V5${on ? 'm5 3a6 6 0 0 1 0 8m3-11a10 10 0 0 1 0 14' : 'm5 4 6 6m0-6-6 6'}"/></svg>`;
   $('sound').setAttribute('aria-label',label); write('sound','title',label);
   $('sound').setAttribute('aria-pressed',String(on));
-  write('audio-status','textContent',on ? 'SOUND ON' : soundState === 'starting' ? 'STARTING…' : sound ? 'TAP FOR SOUND' : 'SOUND OFF');
+  write('audio-status','textContent',tr(on ? 'SOUND ON' : soundState === 'starting' ? 'STARTING…' : sound ? 'TAP FOR SOUND' : 'SOUND OFF'));
 }
 updateSound();
 $('sound').addEventListener('click', () => {
@@ -154,16 +155,16 @@ function updateHealth() {
   const hud = $('health');
   if (hud.dataset.value === String(health)) return;
   hud.dataset.value = String(health);
-  hud.setAttribute('aria-label',`Health: ${health} of ${MAX_HEALTH}`);
-  hud.innerHTML = '<span class="sr-only">Health</span>' + Array.from({length:MAX_HEALTH},(_,i)=>`<b class="health-pip${i < health ? '' : ' empty'}" aria-hidden="true"></b>`).join('');
+  hud.setAttribute('aria-label',getLanguage()==='de'?`Leben: ${health} von ${MAX_HEALTH}`:`Health: ${health} of ${MAX_HEALTH}`);
+  hud.innerHTML = `<span class="sr-only">${tr('Health')}</span>` + Array.from({length:MAX_HEALTH},(_,i)=>`<b class="health-pip${i < health ? '' : ' empty'}" aria-hidden="true"></b>`).join('');
 }
 let shownHull;
 function updateHull() {
   const hull=run?.vehicle?.hull || 0;
   if(shownHull===hull)return;shownHull=hull;
   frame.classList.toggle('vehicle-active',hull>0);write('hull-status','hidden',!hull);
-  $('hull-status').setAttribute('aria-label',`Shuttle hull: ${hull} of 3`);
-  $('hull-status').innerHTML='<span>Hull</span>'+Array.from({length:3},(_,i)=>`<i class="${i<hull?'':'empty'}" aria-hidden="true"></i>`).join('');
+  $('hull-status').setAttribute('aria-label',getLanguage()==='de'?`Shuttle-Hülle: ${hull} von 3`:`Shuttle hull: ${hull} of 3`);
+  $('hull-status').innerHTML=`<span>${tr('Hull')}</span>`+Array.from({length:3},(_,i)=>`<i class="${i<hull?'':'empty'}" aria-hidden="true"></i>`).join('');
 }
 /** Start a fresh fixed-mode run while retaining pilot, scores and sound preference. */
 function start() {
@@ -172,14 +173,14 @@ function start() {
   updateHealth();
   setOverlay(null); $('pause').disabled = false; setPauseIcon(false);
   write('distance','textContent','0000'); write('salvage','textContent','00');
-  write('sector','textContent','Personnel deck');
+  write('sector','textContent',tr('Personnel deck'));
   speak('start'); checkpoint.save(run); checkpointElapsed=0;
   if (sound) initAudio(true);
   canvas.tabIndex = 0; canvas.focus({preventScroll:true});
 }
 function setPauseIcon(paused) {
   $('pause').innerHTML = `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="${paused ? 'm8 5 11 7-11 7V5' : 'M8 5v14M16 5v14'}"/></svg>`;
-  $('pause').setAttribute('aria-label',paused?'Resume game':'Pause game'); write('pause','title',paused?'Resume game':'Pause game');
+  $('pause').setAttribute('aria-label',tr(paused?'Resume game':'Pause game')); write('pause','title',tr(paused?'Resume game':'Pause game'));
 }
 /** Pause is idempotent; Resume never starts, replaces or toggles a run. */
 function pause() {
@@ -189,7 +190,7 @@ function pause() {
   // Reading belongs to a deliberate pause, with no deadline or competing banter.
   const portal=run.portal&&!run.portal.passed?run.portal:null;
   write('portal-guide','hidden',!portal);write('pause-chat','hidden',!!portal);
-  if(portal)write('portal-destination','textContent',`Portal → ${portal.realm==='ship'?'Your ship':sectorFor({realm:portal.realm}).name}`);
+  if(portal)write('portal-destination','textContent',`Portal → ${portal.realm==='ship'?tr('Your ship'):sectorFor({realm:portal.realm}).name}`);
   setOverlay('pause-card');setPauseIcon(true);audio.setMode(mode);$('resume').focus({preventScroll:true});
 }
 /** Continue the exact active run only after an explicit native action. */
@@ -205,9 +206,9 @@ function finish(hazard) {
   lastScoreId = pilot.add(distance, run.salvage,run.difficulty);
   best = pilot.best(run.difficulty);
   const [title,message] = deaths[hazard] || deaths.laser;
-  write('end-title','textContent',title); write('end-message','textContent',message);
+  write('end-title','textContent',tr(title)); write('end-message','textContent',tr(message));
   write('shift-report','textContent',shiftReport(run,sectorFor(run).name));
-  write('end-label','textContent',record ? 'Personal best' : 'Shift ended');
+  write('end-label','textContent',tr(record ? 'Personal best' : 'Shift ended'));
   $('result-distance').innerHTML = `${distance}<small>m</small>`;
   write('result-salvage','textContent',run.salvage);
   $('result-best').innerHTML = `${best}<small>m</small>`; write('best','textContent',`${best} m`);
@@ -230,7 +231,7 @@ $('pause-restart').addEventListener('click',()=>{if(mode==='paused'&&!restartDia
 restartDialog.querySelector('form').addEventListener('submit',e=>{e.preventDefault();const confirmed=e.submitter?.value==='restart';restartDialog.close();if(confirmed&&mode==='paused')start();});
 restartDialog.addEventListener('close',()=>{if(mode==='paused')$('resume').focus({preventScroll:true});});
 $('pause').addEventListener('click',togglePause);$('resume').addEventListener('click',resume);
-$('back').addEventListener('click',() => { if(mode!=='dead')return; checkpoint.clear(); mode = 'ready'; run = null; release(); particles = []; fx.clear(); audio.setRealm('ship'); setOverlay('intro'); write('distance','textContent','0000'); write('salvage','textContent','00'); write('sector','textContent','Personnel deck'); speak('start'); $('start').focus({preventScroll:true}); });
+$('back').addEventListener('click',() => { if(mode!=='dead')return; checkpoint.clear(); mode = 'ready'; run = null; release(); particles = []; fx.clear(); audio.setRealm('ship'); setOverlay('intro'); write('distance','textContent','0000'); write('salvage','textContent','00'); write('sector','textContent',tr('Personnel deck')); speak('start'); $('start').focus({preventScroll:true}); });
 function renderRecords() {
   write('pilot-tag','textContent',pilot.name);
   $('score-list').replaceChildren();
@@ -252,7 +253,7 @@ function openRecords() {
   document.querySelector(`#score-difficulty input[value="${scoreDifficulty}"]`).checked=true;
   release(); renderRecords(); write('pilot-name','value',pilot.name);
   write('pilot-saved','textContent','');
-  $('records-close').firstChild.textContent = 'Back ';
+  $('records-close').firstChild.textContent = tr('Back')+' ';
   setOverlay('records-card'); $('records-close').focus({preventScroll:true});
 }
 function closeRecords() {
@@ -266,7 +267,7 @@ $('records-close').addEventListener('click',closeRecords);
 $('pilot-form').addEventListener('submit', e => {
   e.preventDefault(); pilot.setName($('pilot-name').value, mode === 'dead' ? lastScoreId : null);
   write('pilot-name','value',pilot.name); $('pilot-name').blur(); renderRecords();
-  write('pilot-saved','textContent',pilot.persistent ? 'Saved' : 'Could not save on this device.');
+  write('pilot-saved','textContent',tr(pilot.persistent ? 'Saved' : 'Could not save on this device.'));
 });
 $('pilot-name').addEventListener('focus', () => $('records-card').classList.add('editing'));
 $('pilot-name').addEventListener('blur', () => $('records-card').classList.remove('editing'));
@@ -408,10 +409,10 @@ function updateThumb() {
   frame.dataset.mode = mode;
   thrust.disabled = mode !== 'playing';
   thrust.classList.toggle('held',active); thrust.setAttribute('aria-pressed',String(active));
-  write('thumb-instruction','textContent',mode==='playing' ? active?'Release to fall':'Hold to rise' : mode==='paused'?'On a break' : mode==='dead'?'Another go?':'Hold to rise');
+  write('thumb-instruction','textContent',tr(mode==='playing' ? active?'Release to fall':'Hold to rise' : mode==='paused'?'On a break' : mode==='dead'?'Another go?':'Hold to rise'));
   write('thrust-detail','textContent',weapon?'Tap to fire':'Release to fall');
-  write('gear-status','textContent',weapon?(vehicle&&weapon!=='shuttle'?WEAPONS[weapon].upgrade:WEAPONS[weapon].name)+(ammo!==null?` · ${ammo}`:''):'Unarmed');
-  thrust.setAttribute('aria-label',weapon?'Hold to fly. Tap to fire. Release to fall.':'Hold to fly. Release to fall.');
+  write('gear-status','textContent',weapon?(tr(vehicle&&weapon!=='shuttle'?WEAPONS[weapon].upgrade:WEAPONS[weapon].name))+(ammo!==null?` · ${ammo}`:''):tr('Unarmed'));
+  thrust.setAttribute('aria-label',tr(weapon?'Hold to fly. Tap to fire. Release to fall.':'Hold to fly. Release to fall.'));
 }
 function loop(ms) {const dt=Math.min(.05,(ms-last)/1000||0);last=ms;tick(dt);renderer.draw({run,mode,held,time,particles,fx,shake,flash});requestAnimationFrame(loop);}
 resize();
@@ -419,9 +420,24 @@ const recovered=checkpoint.load(W);
 if(recovered) {
   run=recovered;selectedDifficulty=run.difficulty;best=pilot.best(selectedDifficulty);
   document.querySelector(`#difficulty-choice input[value="${selectedDifficulty}"]`).checked=true;
-  write('run-mode','textContent',`· ${DIFFICULTIES[selectedDifficulty].label}`);write('best','textContent',`${best} m`);
+  write('run-mode','textContent',`· ${tr(DIFFICULTIES[selectedDifficulty].label)}`);write('best','textContent',`${best} m`);
   updateRunHud();audio.setRealm(run.realm);mode='playing';$('pause').disabled=false;canvas.tabIndex=0;pause();
 }
+document.querySelectorAll('.language-choice input').forEach(input=>{input.checked=input.value===getLanguage();});
+translateShell();
+document.querySelectorAll('.language-choice input').forEach(input=>input.addEventListener('change',()=>{
+  if(!input.checked)return;setLanguage(input.value);
+  document.querySelectorAll('.language-choice input').forEach(choice=>{choice.checked=choice.value===getLanguage();});
+  translateShell();write('run-mode','textContent',`· ${tr(DIFFICULTIES[selectedDifficulty].label)}`);
+  $('health').dataset.value='';shownHull=undefined;thumbMode=undefined;
+  updateHealth();updateHull();updateSound();updateThumb();setPauseIcon(mode==='paused');
+  if(run)updateRunHud();
+  if(mode==='ready')crewChat('intro-chat','start');
+  if(mode==='paused'){
+    crewChat('pause-chat',lastRadioKey);
+    if(run.portal&&!run.portal.passed)write('portal-destination','textContent',`Portal → ${run.portal.realm==='ship'?tr('Your ship'):sectorFor({realm:run.portal.realm}).name}`);
+  }
+}));
 requestAnimationFrame(loop);
 if('serviceWorker' in navigator) window.addEventListener('load',()=>{
   navigator.serviceWorker.register('./sw.js',{updateViaCache:'none'}).then(registration=>{
