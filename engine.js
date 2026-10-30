@@ -299,8 +299,8 @@ export class Run {
       }
     }
   }
-  /** Advance real seconds; motion follows world pace while warnings/recovery use real time. */
-  update(dt, held) {
+  /** Advance real seconds. Authored practice disables population, retaining ordinary physics/collisions. */
+  update(dt, held, populate = true) {
     if (!this.alive) return;
     const previousY = this.player.y;
     this.elapsed += dt;
@@ -324,16 +324,16 @@ export class Run {
     if (this.player.y > lower) { this.player.y = lower; this.player.vy = Math.min(0, this.player.vy); }
     const move = this.speed * dt;
     this.scroll += move; this.distance += move / 13;
-    const aidDue=this.health<MAX_HEALTH&&!this.medkit&&!this.portal&&this.elapsed>=this.nextAidAt;
-    const portalDue=this.distance>=this.nextPortal&&!this.portal;
-    const vehicleDue=!this.vehicle&&!this.vehiclePickup&&!this.portal&&!this.medkit&&this.distance>=this.nextVehicleAt;
+    const aidDue=populate&&this.health<MAX_HEALTH&&!this.medkit&&!this.portal&&this.elapsed>=this.nextAidAt;
+    const portalDue=populate&&this.distance>=this.nextPortal&&!this.portal;
+    const vehicleDue=populate&&!this.vehicle&&!this.vehiclePickup&&!this.portal&&!this.medkit&&this.distance>=this.nextVehicleAt;
     const waiting=(aidDue||portalDue||vehicleDue)&&!this.approachClear;
     if(waiting)this.spawnIn=Math.max(this.spawnIn,.1);
     if(aidDue&&!waiting)this.spawnMedkit();
     if(this.medkit)this.medkit.x-=move;
     if(vehicleDue&&!waiting&&!this.medkit&&!portalDue)this.spawnVehicle();
     if(this.vehiclePickup)this.vehiclePickup.x-=move;
-    if(this.ammo===null && !this.gear && !this.portal && !this.medkit && !this.vehiclePickup && this.distance>=this.nextGearAt) {
+    if(populate && this.ammo===null && !this.gear && !this.portal && !this.medkit && !this.vehiclePickup && this.distance>=this.nextGearAt) {
       this.gear={x:this.width+55,y:320,kind:this.chooseWeapon()};
       this.nextGearAt=this.distance+85;
     }
@@ -380,9 +380,9 @@ export class Run {
       if(item&&item.x>this.player.x)this.spawnIn=Math.max(this.spawnIn,(item.x-this.player.x)/this.speed+grace);
     }
     this.spawnIn -= dt;
-    if (this.spawnIn <= 0) { const spawned=this.spawnObstacle(); this.spawnIn = 2.25-.25*Math.min(1,this.elapsed/180)+this.rng()*.35+(spawned.type==='pendulum'?.7:spawned.paired?.55:0); }
+    if (populate && this.spawnIn <= 0) { const spawned=this.spawnObstacle(); this.spawnIn = 2.25-.25*Math.min(1,this.elapsed/180)+this.rng()*.35+(spawned.type==='pendulum'?.7:spawned.paired?.55:0); }
     this.coinIn -= dt;
-    if (this.coinIn <= 0) { this.spawnCoins(); this.coinIn = 2.25 + this.rng() * 1.3; }
+    if (populate && this.coinIn <= 0) { this.spawnCoins(); this.coinIn = 2.25 + this.rng() * 1.3; }
     for (const o of this.obstacles) {
       o.age += flightTime;
       if (o.type === 'missile' && o.warning > 0) { o.warning -= dt; o.x = this.width + 80; continue; }

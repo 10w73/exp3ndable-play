@@ -4,6 +4,12 @@
 
 # exp3ndable
 
+New to flying? Choose **Tutorial** on the start screen (**Übung** in German).
+It is optional and replayable: explanations stop the flight, then you practise
+holding, releasing, collecting and avoiding a wall with the normal controls.
+Back, skip and leave are available; practice never enters scores or saved runs.
+It never starts automatically, including after an update or cleared browser data.
+
 **You were only going to get coffee.**
 
 A mellow sci-fi comedy runner about a very junior officer having a very long shift.
