@@ -61,7 +61,7 @@ const exchanges = {
     [moss('New toy. Safety is a state of mind.'), siv('Keep it pointed away from your organs.')],
     [pip('This one has a warranty.'), siv('It is written on tape.')],
     [pip('The ammunition is looking at me.'), moss('Emotional support moon. Do not get attached. It eats engines.')],
-    [moss('Ten shots of pure bureaucracy. Fucking weaponised middle management.'), siv('At last. A practical application.')]
+    [moss('Five shots of pure bureaucracy. Fucking weaponised middle management.'), siv('At last. A practical application.')]
   ],
   warning: [
     [moss('Top half: floaty. Bottom half: money. Miss it: same shit.'), pip('I would like the same shit, please.')],
@@ -115,7 +115,7 @@ export function shiftReport(run, location) {
   const collected=run.collectedSalvage;
   const verdict=collected>=50?'Salvage hero. Coffee zero.':run.realm!=='ship'?'Wrong dimension. Same coffee break.':'The coffee can wait. Apparently forever.';
   if(getLanguage()==='de') {
-    const ending=collected>=50?'Beuteheld. Kaffee null.':run.realm!=='ship'?'Falsche Dimension. Gleiche Kaffeepause.':'Der Kaffee kann warten. Offenbar für immer.';
+    const ending=collected>=50?'Beute gesichert. Kaffee gestrichen.':run.realm!=='ship'?'Falsche Dimension. Immer noch Kaffeepause.':'Der Kaffee kann warten. Offenbar für immer.';
     return `${duration} im Dienst · Zuletzt gesehen: ${tr(location)}. ${collected} Ruhestoff gesammelt. ${ending}`;
   }
   return `${duration} on duty · Last seen: ${location}. ${collected} Stillmatter gathered. ${verdict}`;

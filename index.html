@@ -43,6 +43,7 @@
             <div class="tutorial-heading"><span id="tutorial-progress"></span><button class="text-button" id="tutorial-leave">Leave tutorial</button></div>
             <div id="tutorial-explanation" aria-live="polite" aria-atomic="true"><h2 id="tutorial-title"></h2><p id="tutorial-body"></p><p id="tutorial-detail"></p></div>
             <p id="tutorial-hint" role="status"></p>
+            <progress id="tutorial-skill-progress" max="100" value="0" aria-label="Lesson progress" hidden></progress>
             <div class="tutorial-actions"><button class="text-button" id="tutorial-back">Back</button><button class="primary-button" id="tutorial-next">Next</button><button class="text-button" id="tutorial-skip" hidden>Skip step</button></div>
           </section>
           <div class="end-card" id="end-card" hidden>
@@ -58,7 +59,7 @@
           <strong id="portal-destination"></strong>
           <span>Upper: low gravity · Lower: salvage ×2 · 10s</span>
           <span>Fly above or below the opening to stay here</span>
-        </div><div class="crew-chat" id="pause-chat" aria-label="Crew conversation"></div><button class="primary-button" id="resume">Resume <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 12h16m-7-7 7 7-7 7"/></svg></button><div class="end-links"><button class="text-button" id="paused-scores">Name & scores</button><button class="text-button" id="pause-restart">Restart</button></div><fieldset class="difficulty-choice language-choice" id="pause-language-choice"><legend class="sr-only">Language</legend><label><input type="radio" name="pause-language" value="en" checked><span>English</span></label><label><input type="radio" name="pause-language" value="de"><span>Deutsch</span></label></fieldset></div>
+        </div><div class="crew-chat" id="pause-chat" aria-label="Crew conversation"></div><button class="primary-button" id="resume">Resume <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 12h16m-7-7 7 7-7 7"/></svg></button><div class="end-links"><button class="text-button" id="paused-tutorial">Tutorial</button><button class="text-button" id="paused-scores">Name & scores</button><button class="text-button" id="pause-restart">Restart</button></div><fieldset class="difficulty-choice language-choice" id="pause-language-choice"><legend class="sr-only">Language</legend><label><input type="radio" name="pause-language" value="en" checked><span>English</span></label><label><input type="radio" name="pause-language" value="de"><span>Deutsch</span></label></fieldset></div>
           <div class="records-card" id="records-card" hidden>
             <h2>Scores</h2>
 
@@ -69,6 +70,7 @@
           </div>
         </div>
         <div class="tutorial-marker" id="tutorial-marker" aria-hidden="true" hidden></div>
+        <div class="tutorial-lane" id="tutorial-lane" aria-hidden="true" hidden></div>
         <div class="thumb-deck">
           <div class="thumb-copy"><strong id="thumb-instruction">Hold to rise</strong><span>Release to fall</span></div>
           <button id="thrust" class="thrust-pad" aria-label="Hold to fly. Tap to fire. Release to fall." aria-pressed="false" disabled><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m5 13 7-7 7 7M12 6v14"/></svg><span>Fly</span><small id="thrust-detail">Tap to fire</small></button>

@@ -299,14 +299,14 @@ export class Run {
       }
     }
   }
-  /** Advance real seconds. Authored practice disables population, retaining ordinary physics/collisions. */
-  update(dt, held, populate = true) {
+  /** Advance real seconds. Authored practice omits endless spawning/pressure growth; flight and collisions stay real. */
+  update(dt, held, endless = true) {
     if (!this.alive) return;
     const previousY = this.player.y;
     this.elapsed += dt;
     const heldTime=Math.min(this.timeHold,dt);this.timeHold=Math.max(0,this.timeHold-dt);
-    if(this.elapsed>8)this.entropy=Math.min(100,this.entropy+4*(dt-heldTime));
-    const cruise=.3*(1-Math.exp(-Math.max(0,this.elapsed-12)/75));
+    if(endless&&this.elapsed>8)this.entropy=Math.min(100,this.entropy+4*(dt-heldTime));
+    const cruise=endless?.3*(1-Math.exp(-Math.max(0,this.elapsed-12)/75)):0;
     const targetPace=1+cruise+this.profile.pressureGain*(this.entropy/100)**1.1;
     this.speedMultiplier+=(targetPace-this.speedMultiplier)*(1-Math.exp(-dt/.9));
     const flightTime=dt*this.speedMultiplier;
@@ -324,16 +324,16 @@ export class Run {
     if (this.player.y > lower) { this.player.y = lower; this.player.vy = Math.min(0, this.player.vy); }
     const move = this.speed * dt;
     this.scroll += move; this.distance += move / 13;
-    const aidDue=populate&&this.health<MAX_HEALTH&&!this.medkit&&!this.portal&&this.elapsed>=this.nextAidAt;
-    const portalDue=populate&&this.distance>=this.nextPortal&&!this.portal;
-    const vehicleDue=populate&&!this.vehicle&&!this.vehiclePickup&&!this.portal&&!this.medkit&&this.distance>=this.nextVehicleAt;
+    const aidDue=endless&&this.health<MAX_HEALTH&&!this.medkit&&!this.portal&&this.elapsed>=this.nextAidAt;
+    const portalDue=endless&&this.distance>=this.nextPortal&&!this.portal;
+    const vehicleDue=endless&&!this.vehicle&&!this.vehiclePickup&&!this.portal&&!this.medkit&&this.distance>=this.nextVehicleAt;
     const waiting=(aidDue||portalDue||vehicleDue)&&!this.approachClear;
     if(waiting)this.spawnIn=Math.max(this.spawnIn,.1);
     if(aidDue&&!waiting)this.spawnMedkit();
     if(this.medkit)this.medkit.x-=move;
     if(vehicleDue&&!waiting&&!this.medkit&&!portalDue)this.spawnVehicle();
     if(this.vehiclePickup)this.vehiclePickup.x-=move;
-    if(populate && this.ammo===null && !this.gear && !this.portal && !this.medkit && !this.vehiclePickup && this.distance>=this.nextGearAt) {
+    if(endless && this.ammo===null && !this.gear && !this.portal && !this.medkit && !this.vehiclePickup && this.distance>=this.nextGearAt) {
       this.gear={x:this.width+55,y:320,kind:this.chooseWeapon()};
       this.nextGearAt=this.distance+85;
     }
@@ -380,9 +380,9 @@ export class Run {
       if(item&&item.x>this.player.x)this.spawnIn=Math.max(this.spawnIn,(item.x-this.player.x)/this.speed+grace);
     }
     this.spawnIn -= dt;
-    if (populate && this.spawnIn <= 0) { const spawned=this.spawnObstacle(); this.spawnIn = 2.25-.25*Math.min(1,this.elapsed/180)+this.rng()*.35+(spawned.type==='pendulum'?.7:spawned.paired?.55:0); }
+    if (endless && this.spawnIn <= 0) { const spawned=this.spawnObstacle(); this.spawnIn = 2.25-.25*Math.min(1,this.elapsed/180)+this.rng()*.35+(spawned.type==='pendulum'?.7:spawned.paired?.55:0); }
     this.coinIn -= dt;
-    if (populate && this.coinIn <= 0) { this.spawnCoins(); this.coinIn = 2.25 + this.rng() * 1.3; }
+    if (endless && this.coinIn <= 0) { this.spawnCoins(); this.coinIn = 2.25 + this.rng() * 1.3; }
     for (const o of this.obstacles) {
       o.age += flightTime;
       if (o.type === 'missile' && o.warning > 0) { o.warning -= dt; o.x = this.width + 80; continue; }

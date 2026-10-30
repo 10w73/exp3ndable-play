@@ -29,7 +29,7 @@ function fitKeyboard() {
 }
 fitKeyboard();window.visualViewport?.addEventListener('resize',fitKeyboard);window.visualViewport?.addEventListener('scroll',fitKeyboard);
 let W = 1200, mode = 'ready', run, held = false, keys = new Set(), pointers = new Map();
-let tutorial;
+let tutorial,tutorialReturn;
 let time = 0, last = 0, accumulator = 0, shake = 0, flash = 0, particles = [];
 const fx = new CombatFX();
 let best = 0, sound = true, soundState = 'off';
@@ -167,7 +167,7 @@ function updateHull() {
   const hull=run?.vehicle?.hull || 0;
   if(shownHull===hull)return;shownHull=hull;
   frame.classList.toggle('vehicle-active',hull>0);write('hull-status','hidden',!hull);
-  $('hull-status').setAttribute('aria-label',getLanguage()==='de'?`Shuttle-Hülle: ${hull} von 3`:`Shuttle hull: ${hull} of 3`);
+  $('hull-status').setAttribute('aria-label',getLanguage()==='de'?`Shuttle-Rumpf: ${hull} von 3`:`Shuttle hull: ${hull} of 3`);
   $('hull-status').innerHTML=`<span>${tr('Hull')}</span>`+Array.from({length:3},(_,i)=>`<i class="${i<hull?'':'empty'}" aria-hidden="true"></i>`).join('');
 }
 /** Start a fresh fixed-mode run while retaining pilot, scores and sound preference. */
@@ -402,6 +402,7 @@ function tick(dt) {
   updateHull();
   audio.setMode(mode); audio.setThrust(mode==='playing' && held);
   updateThumb();
+  if(tutorial)tutorialView.update(tutorial);
 }
 /** Refresh both live and recovered HUDs from the same simulation values. */
 function updateRunHud() {
@@ -428,26 +429,38 @@ function updateThumb() {
 function loop(ms) {const dt=Math.min(.05,(ms-last)/1000||0);last=ms;tick(dt);renderer.draw({run,mode,held,time,particles,fx,shake,flash});requestAnimationFrame(loop);}
 const tutorialView=new TutorialView(()=>{
   if(!tutorial||tutorial.practicing)return;
-  if(tutorial.lesson.id==='done'){leaveTutorial();start();return;}
+  if(tutorial.lesson.id==='done'){const returning=!!tutorialReturn;leaveTutorial();if(!returning)start();return;}
   tutorial.next();showTutorial();
 },()=>{if(tutorial&&!tutorial.practicing){tutorial.back();showTutorial();}},()=>{if(tutorial?.practicing){tutorial.skip();showTutorial();}},()=>leaveTutorial());
 /** Training uses the same native input path; every explanatory stop releases owned gestures. */
 function showTutorial() {
   release();run=tutorial.run;mode=tutorial.practicing?'playing':'paused';accumulator=0;
   particles=[];fx.clear();shake=0;flash=0;updateRunHud();updateHull();setOverlay('tutorial-card');
-  $('pause').disabled=!tutorial.practicing&&!tutorial.suspended;setPauseIcon(!tutorial.practicing);
-  tutorialView.show(tutorial);audio.setMode(mode);
+  $('pause').disabled=!tutorial.practicing&&!tutorial.suspended;setPauseIcon(tutorial.suspended);
+  tutorialView.show(tutorial,!!tutorialReturn);audio.setMode(mode);
   if(tutorial.practicing){canvas.tabIndex=0;canvas.focus({preventScroll:true});if(sound)initAudio();}
 }
-/** Leaving never records, clears or replaces a checkpoint; only explicit Play starts a scored run. */
+/** Restore the ordinary paused run or return home; practice itself never becomes a save. */
 function leaveTutorial() {
   if(!tutorial)return;
+  const previous=tutorialReturn;tutorialReturn=null;
   release();tutorial=null;run=null;mode='ready';particles=[];fx.clear();tutorialView.clear();
+  if(previous){
+    run=previous.run;run.resize(W);lastRadioKey=previous.radioKey;lastRadioAt=previous.radioAt;
+    mode='playing';audio.setRealm(run.realm);$('pause').disabled=false;
+    updateRunHud();updateHull();pause();return;
+  }
   $('pause').disabled=true;setPauseIcon(false);audio.setRealm('ship');audio.setMode(mode);setOverlay('intro');
   write('distance','textContent','0000');write('salvage','textContent','00');updateHealth();updateHull();
   write('sector','textContent',tr('Personnel deck'));speak('start');$('tutorial-open').focus({preventScroll:true});
 }
-$('tutorial-open').addEventListener('click',()=>{if(mode==='ready'){tutorial=new FlightTutorial(W,selectedDifficulty);showTutorial();}});
+/** An optional detour preserves an ordinary paused run, including across reloads/updates. */
+function openTutorial() {
+  if(tutorial||restartDialog.open||frame.classList.contains('show-records')||!['ready','paused'].includes(mode))return;
+  tutorialReturn=mode==='paused'?{run,radioKey:lastRadioKey,radioAt:lastRadioAt}:null;
+  tutorial=new FlightTutorial(W,run?.difficulty??selectedDifficulty);audio.setRealm('ship');showTutorial();
+}
+for(const id of ['tutorial-open','paused-tutorial'])$(id).addEventListener('click',openTutorial);
 resize();
 const recovered=checkpoint.load(W);
 if(recovered) {

@@ -4,10 +4,11 @@
 
 # exp3ndable
 
-New to flying? Choose **Tutorial** on the start screen (**Übung** in German).
+New to flying? Choose **Tutorial** on the start or pause screen (**Übung** in German).
 It is optional and replayable: explanations stop the flight, then you practise
-holding, releasing, collecting and avoiding a wall with the normal controls.
-Back, skip and leave are available; practice never enters scores or saved runs.
+controlling your height, aiming real shots, collecting and avoiding a wall.
+Back, skip and leave are available. From Pause, you return to the same saved run.
+Practice itself never enters scores or replaces your saved flight.
 It never starts automatically, including after an update or cleared browser data.
 
 **You were only going to get coffee.**
@@ -79,8 +80,10 @@ that probably passed inspection in another dimension.
 | Fullscreen | Tap the fullscreen button, when available | Focus it with **Tab**, then press **Enter** |
 | Pilot name & scores | Tap your name / **Scores**; enter a name and tap **Done** | **Tab** through the form; **Enter** saves; **Esc** closes Scores |
 
-Each touch or mouse press also fires a shot. Holding keeps you climbing; it doesn't
-keep firing. **Space** behaves the same way. **↑** and **W** fly without shooting or spending ammo;
+Alternate presses and releases to choose your height. Shots travel forward from
+that height, so line yourself up with what you want to hit. Each new touch or
+mouse press also fires; holding continuously takes you to the ceiling and does
+not keep firing. **Space** behaves the same way. **↑** and **W** fly without shooting or spending ammo;
 **X** fires without changing your flight.
 
 Use **Tab** and **Enter** for menu buttons. When the **Fly** button itself has
