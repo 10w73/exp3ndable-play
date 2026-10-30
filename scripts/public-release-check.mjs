@@ -5,7 +5,7 @@ import {resolve} from 'node:path';
 import {fileURLToPath, pathToFileURL} from 'node:url';
 
 export const GAME_FILES = Object.freeze([
-  'arsenal.js', 'art.js', 'workplace-art.js', 'language.js', 'creatures.js', 'creature-art.js', 'audio.js', 'dialogue.js', 'engine.js', 'fx.js',
+  'arsenal.js', 'art.js', 'workplace-art.js', 'language.js', 'tutorial.js', 'tutorial-view.js', 'creatures.js', 'creature-art.js', 'audio.js', 'dialogue.js', 'engine.js', 'fx.js',
   'game.js', 'renderer.js', 'difficulty.js', 'apple-touch-icon.png', 'icon-192.png', 'icon-512.png', 'icon.svg', 'index.html', 'manifest.webmanifest', 'manifest.de.webmanifest', 'records.js', 'checkpoint.js',
   'style.css', 'sw.js'
 ]);

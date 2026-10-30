@@ -9,6 +9,8 @@ import { CrewRadio, CREW, shiftReport } from './dialogue.js';
 import {sectorFor,drawRadioPortrait} from './art.js';
 import {createRenderer} from './renderer.js';
 import {RunCheckpoint} from './checkpoint.js';
+import {FlightTutorial} from './tutorial.js';
+import {TutorialView} from './tutorial-view.js';
 
 const nodes=new Map();
 const $=id=>{if(!nodes.has(id))nodes.set(id,document.getElementById(id));return nodes.get(id);};
@@ -27,6 +29,7 @@ function fitKeyboard() {
 }
 fitKeyboard();window.visualViewport?.addEventListener('resize',fitKeyboard);window.visualViewport?.addEventListener('scroll',fitKeyboard);
 let W = 1200, mode = 'ready', run, held = false, keys = new Set(), pointers = new Map();
+let tutorial;
 let time = 0, last = 0, accumulator = 0, shake = 0, flash = 0, particles = [];
 const fx = new CombatFX();
 let best = 0, sound = true, soundState = 'off';
@@ -96,6 +99,7 @@ function resize() {
   // Render to a small pixel grid, then scale with nearest-neighbor sampling.
   renderer.resize(W);
   if (run) run.resize(W);
+  if(tutorial)tutorialView.point(tutorial);
 }
 new ResizeObserver(resize).observe($('flight-deck'));
 
@@ -146,7 +150,7 @@ function release() {
 function setOverlay(which) {
   write('overlay','hidden',!which);
   frame.classList.toggle('show-records', which === 'records-card');
-  for (const name of ['intro','end-card','pause-card','records-card']) $(name).hidden = name !== which;
+  for (const name of ['intro','end-card','pause-card','records-card','tutorial-card']) $(name).hidden = name !== which;
   // Native controls change in the same transaction as menus, not a later animation frame.
   updateThumb();
 }
@@ -168,6 +172,7 @@ function updateHull() {
 }
 /** Start a fresh fixed-mode run while retaining pilot, scores and sound preference. */
 function start() {
+  if(tutorial)return;
   checkpoint.clear(); // Abandon the old shift even if saving the fresh one fails.
   lastScoreId = null; release(); run = new Run(W,Math.random,selectedDifficulty); mode = 'playing'; particles = []; fx.clear(); audio.setRealm('ship'); shake = 0; flash = 0; accumulator = 0;
   updateHealth();
@@ -185,6 +190,7 @@ function setPauseIcon(paused) {
 /** Pause is idempotent; Resume never starts, replaces or toggles a run. */
 function pause() {
   if(mode!=='playing')return;
+  if(tutorial){tutorial.suspend();showTutorial();return;}
   mode='paused';release();checkpoint.save(run);checkpointElapsed=0;
   speak(run.elapsed-lastRadioAt<12?lastRadioKey:(run.realm||'crew'));
   // Reading belongs to a deliberate pause, with no deadline or competing banter.
@@ -195,6 +201,7 @@ function pause() {
 }
 /** Continue the exact active run only after an explicit native action. */
 function resume() {
+  if(tutorial){if(tutorial.suspended){tutorial.next();showTutorial();}return;}
   if(mode!=='paused'||restartDialog.open||frame.classList.contains('show-records'))return;
   release();mode='playing';setOverlay(null);setPauseIcon(false);accumulator=0;
   audio.setMode(mode);if(sound)initAudio();canvas.focus({preventScroll:true});
@@ -227,7 +234,7 @@ function takeHit(event) {
 }
 // Each command owns one legal transition; hidden/stale controls cannot reset a live shift.
 for(const [id,expected]of [['start','ready'],['restart','dead']])$(id).addEventListener('click',()=>{if(mode===expected)start();});
-$('pause-restart').addEventListener('click',()=>{if(mode==='paused'&&!restartDialog.open){restartDialog.returnValue='cancel';restartDialog.showModal();}});
+$('pause-restart').addEventListener('click',()=>{if(!tutorial&&mode==='paused'&&!restartDialog.open){restartDialog.returnValue='cancel';restartDialog.showModal();}});
 restartDialog.querySelector('form').addEventListener('submit',e=>{e.preventDefault();const confirmed=e.submitter?.value==='restart';restartDialog.close();if(confirmed&&mode==='paused')start();});
 restartDialog.addEventListener('close',()=>{if(mode==='paused')$('resume').focus({preventScroll:true});});
 $('pause').addEventListener('click',togglePause);$('resume').addEventListener('click',resume);
@@ -248,6 +255,7 @@ function renderRecords() {
 }
 /** Pause a live run before editing records; browsing modes must not change its profile. */
 function openRecords() {
+  if(tutorial)return;
   if (mode === 'playing') pause();
   scoreDifficulty=run?.difficulty??selectedDifficulty;
   document.querySelector(`#score-difficulty input[value="${scoreDifficulty}"]`).checked=true;
@@ -303,6 +311,7 @@ thrust.addEventListener('keydown',e=>{if(mode==='playing' && ['Space','Enter'].i
 thrust.addEventListener('keyup',e=>{if(['Space','Enter'].includes(e.code)){e.preventDefault();keys.delete(e.code);syncHeld();}});
 window.addEventListener('keydown', e => {
   if (isEditing(e.target)||restartDialog.open) return;
+  if(tutorial&&mode!=='playing'){if(e.code==='Escape'){e.preventDefault();leaveTutorial();}return;}
   if (frame.classList.contains('show-records')) { if (e.code === 'Escape') closeRecords(); return; }
   if (['Space','ArrowUp','KeyW'].includes(e.code)) {
     // Space matches touch/click; Up/W give lift only, and X gives fire only.
@@ -325,6 +334,7 @@ window.addEventListener('blur',() => { release(); if(mode === 'playing') pause()
 document.addEventListener('visibilitychange',() => { if(document.hidden)saveAndPause(); release(); audio.setMode(document.hidden ? 'paused' : mode); });
 /** iOS may discard the process without unload; hidden/pagehide are durable save boundaries. */
 function saveAndPause() {
+  if(tutorial){pause();return;}
   if(mode==='playing')pause();
   else if(mode==='paused')checkpoint.save(run);
 }
@@ -339,7 +349,7 @@ function tick(dt) {
   if(mode==='playing') {
     accumulator+=dt;
     while(accumulator>=1/120 && mode==='playing') {
-      run.update(1/120,held);accumulator-=1/120;
+      run.update(1/120,held,!tutorial);accumulator-=1/120;
       for(const event of run.events) {
         if(event.type==='coin') {for(let i=0;i<4;i++)burst(event.x,event.y,LOOT[event.kind].color,.6);audio.cue(event.kind==='salvage'?'coin':'loot-'+event.kind,run.salvage);}
         if(event.type==='loot-effect')fx.pickup(event.x,event.y);
@@ -379,10 +389,11 @@ function tick(dt) {
         if(event.type==='portal') {fx.clear();particles=[];flash=.18;shake=3;audio.setRealm(run.realm);audio.portal();speak({machine:'enterMachine',organic:'enterOrganic',void:'enterVoid',aquarium:'enterAquarium',scrapyard:'enterScrapyard',ship:'backShip'}[run.realm]);}
         if(event.type==='normal') {speak('normal');audio.cue('normal');}
       }
+      if(tutorial?.observe(held))showTutorial();
     }
     updateRunHud();
     checkpointElapsed+=dt;
-    if(mode==='playing'&&checkpointElapsed>=3){checkpoint.save(run);checkpointElapsed=0;}
+    if(!tutorial&&mode==='playing'&&checkpointElapsed>=3){checkpoint.save(run);checkpointElapsed=0;}
     if(held && Math.random()>.25) {const p=run.player;particles.push({x:p.x-14,y:p.y+24,vx:-60-Math.random()*110,vy:65+Math.random()*50,life:.3,max:.4,color:Math.random()>.5?'#f9d88c':'#f7916f',r:2+Math.random()*3});}
   }
   const debt=Math.round(run?.entropy??0);
@@ -410,11 +421,33 @@ function updateThumb() {
   thrust.disabled = mode !== 'playing';
   thrust.classList.toggle('held',active); thrust.setAttribute('aria-pressed',String(active));
   write('thumb-instruction','textContent',tr(mode==='playing' ? active?'Release to fall':'Hold to rise' : mode==='paused'?'On a break' : mode==='dead'?'Another go?':'Hold to rise'));
-  write('thrust-detail','textContent',weapon?'Tap to fire':'Release to fall');
+  write('thrust-detail','textContent',tr(weapon?'Tap to fire':'Release to fall'));
   write('gear-status','textContent',weapon?(tr(vehicle&&weapon!=='shuttle'?WEAPONS[weapon].upgrade:WEAPONS[weapon].name))+(ammo!==null?` · ${ammo}`:''):tr('Unarmed'));
   thrust.setAttribute('aria-label',tr(weapon?'Hold to fly. Tap to fire. Release to fall.':'Hold to fly. Release to fall.'));
 }
 function loop(ms) {const dt=Math.min(.05,(ms-last)/1000||0);last=ms;tick(dt);renderer.draw({run,mode,held,time,particles,fx,shake,flash});requestAnimationFrame(loop);}
+const tutorialView=new TutorialView(()=>{
+  if(!tutorial||tutorial.practicing)return;
+  if(tutorial.lesson.id==='done'){leaveTutorial();start();return;}
+  tutorial.next();showTutorial();
+},()=>{if(tutorial&&!tutorial.practicing){tutorial.back();showTutorial();}},()=>{if(tutorial?.practicing){tutorial.skip();showTutorial();}},()=>leaveTutorial());
+/** Training uses the same native input path; every explanatory stop releases owned gestures. */
+function showTutorial() {
+  release();run=tutorial.run;mode=tutorial.practicing?'playing':'paused';accumulator=0;
+  particles=[];fx.clear();shake=0;flash=0;updateRunHud();updateHull();setOverlay('tutorial-card');
+  $('pause').disabled=!tutorial.practicing&&!tutorial.suspended;setPauseIcon(!tutorial.practicing);
+  tutorialView.show(tutorial);audio.setMode(mode);
+  if(tutorial.practicing){canvas.tabIndex=0;canvas.focus({preventScroll:true});if(sound)initAudio();}
+}
+/** Leaving never records, clears or replaces a checkpoint; only explicit Play starts a scored run. */
+function leaveTutorial() {
+  if(!tutorial)return;
+  release();tutorial=null;run=null;mode='ready';particles=[];fx.clear();tutorialView.clear();
+  $('pause').disabled=true;setPauseIcon(false);audio.setRealm('ship');audio.setMode(mode);setOverlay('intro');
+  write('distance','textContent','0000');write('salvage','textContent','00');updateHealth();updateHull();
+  write('sector','textContent',tr('Personnel deck'));speak('start');$('tutorial-open').focus({preventScroll:true});
+}
+$('tutorial-open').addEventListener('click',()=>{if(mode==='ready'){tutorial=new FlightTutorial(W,selectedDifficulty);showTutorial();}});
 resize();
 const recovered=checkpoint.load(W);
 if(recovered) {
