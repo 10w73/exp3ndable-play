@@ -1,3 +1,4 @@
+import {tr} from './language.js';
 import {isCreature} from './creatures.js';
 
 // Local, bounded pixel effects. No hitboxes, timers, or gameplay side effects.
@@ -125,7 +126,7 @@ export class CombatFX {
         const height=toy.upgraded?384:188,wide=toy.upgraded?95:72;
         c.fillStyle='#ad756a25';c.fillRect(toy.x,toy.y-height/2,toy.width,height);
         c.strokeStyle='#e0a28d';c.lineWidth=4;c.strokeRect(x-wide,y-25,wide*2,50);
-        c.strokeRect(x-wide+6,y-19,wide*2-12,38);c.fillStyle='#e8b69a';c.font='bold 25px monospace';c.textAlign='center';c.fillText(toy.upgraded?'ALL DENIED':'DENIED',x,y+9);
+        c.strokeRect(x-wide+6,y-19,wide*2-12,38);c.fillStyle='#e8b69a';c.font='bold 25px monospace';c.textAlign='center';c.fillText(tr(toy.upgraded?'ALL DENIED':'DENIED'),x,y+9,wide*2-18);
         // The tool retracts; its administrative defeat lingers briefly in place.
         c.globalAlpha=(1-p)*Math.max(0,1-p*2);c.fillStyle='#b79580';c.fillRect(x-26,y-45,52,16);c.fillRect(x-9,y-62,18,18);
       }else if(toy.kind==='beam'){

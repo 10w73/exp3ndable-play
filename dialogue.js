@@ -1,3 +1,4 @@
+import {tr,getLanguage} from './language.js';
 // Original crew. Quiet comms, with time to read each reply.
 export const CREW = {
   pip: { name: 'Pip', color: '#d3b18c' },
@@ -113,5 +114,9 @@ export function shiftReport(run, location) {
   const duration=`${minutes}:${String(seconds%60).padStart(2,'0')}`;
   const collected=run.collectedSalvage;
   const verdict=collected>=50?'Salvage hero. Coffee zero.':run.realm!=='ship'?'Wrong dimension. Same coffee break.':'The coffee can wait. Apparently forever.';
+  if(getLanguage()==='de') {
+    const ending=collected>=50?'Beuteheld. Kaffee null.':run.realm!=='ship'?'Falsche Dimension. Gleiche Kaffeepause.':'Der Kaffee kann warten. Offenbar für immer.';
+    return `${duration} im Dienst · Zuletzt gesehen: ${tr(location)}. ${collected} Ruhestoff gesammelt. ${ending}`;
+  }
   return `${duration} on duty · Last seen: ${location}. ${collected} Stillmatter gathered. ${verdict}`;
 }

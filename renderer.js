@@ -1,3 +1,4 @@
+import {tr} from './language.js';
 import {drawWorkplaces} from './workplace-art.js';
 import {HEIGHT,CEILING,FLOOR,pendulumPoints} from './engine.js';
 import {isCreature} from './creatures.js';
@@ -11,7 +12,7 @@ export function createRenderer(canvas) {
   function rect(x,y,w,h,color,r=0) { ctx.fillStyle=color; ctx.beginPath(); if(r) ctx.roundRect(x,y,w,h,r); else ctx.rect(x,y,w,h); ctx.fill(); }
   function line(x,y,x2,y2,color,width=1) { ctx.strokeStyle=color;ctx.lineWidth=width;ctx.beginPath();ctx.moveTo(x,y);ctx.lineTo(x2,y2);ctx.stroke(); }
   function ellipse(x,y,rx,ry,color) { ctx.fillStyle=color;ctx.beginPath();ctx.ellipse(x,y,Math.abs(rx),Math.abs(ry),0,0,Math.PI*2);ctx.fill(); }
-  function text(value,x,y,size,color,align='left',font='monospace') {ctx.font=`${size}px ${font}`;ctx.fillStyle=color;ctx.textAlign=align;ctx.fillText(value,x,y);ctx.textAlign='left';}
+  function text(value,x,y,size,color,align='left',font='monospace') {ctx.font=`${size}px ${font}`;ctx.fillStyle=color;ctx.textAlign=align;ctx.fillText(tr(value),x,y);ctx.textAlign='left';}
   function bolt(x,y,scale=1,color='#d8f66f') {ctx.save();ctx.translate(x,y);ctx.scale(scale,scale);ctx.fillStyle=color;ctx.beginPath();ctx.moveTo(3,-12);ctx.lineTo(-8,2);ctx.lineTo(0,2);ctx.lineTo(-3,13);ctx.lineTo(9,-3);ctx.lineTo(1,-3);ctx.closePath();ctx.fill();ctx.restore();}
 
   function stars(x,y,w,h,shift,color='#d3e6d8') {

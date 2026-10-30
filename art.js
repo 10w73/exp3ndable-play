@@ -1,3 +1,4 @@
+import {tr} from './language.js';
 import { sectorId, PORTAL_RADIUS_Y, LOOT } from './engine.js';
 import { WEAPONS } from './arsenal.js';
 
@@ -81,13 +82,13 @@ function limb(c,x,y,x2,y2,width,color) {
   for(let i=0;i<=steps;i++){const t=steps?i/steps:0;r(c,x+(x2-x)*t-width/2,y+(y2-y)*t,width,width,color);}
 }
 function r(c,x,y,w,h,color){c.fillStyle=color;c.fillRect(Math.round(x),Math.round(y),w,h);}
-function txt(c,value,x,y,size,color){c.fillStyle=color;c.font=`${size}px monospace`;c.fillText(value,x,y);}
+function txt(c,value,x,y,size,color){c.fillStyle=color;c.font=`${size}px monospace`;c.fillText(tr(value),x,y);}
 function eye(c,x,y,size=1,color='#c7dc97',t=0){r(c,x-12*size,y-8*size,24*size,16*size,color);r(c,x-8*size,y-12*size,16*size,24*size,color);r(c,x-6*size,y-6*size,12*size,12*size,'#eff0ba');r(c,x+Math.sin(t)*2*size,y-5*size,5*size,10*size,'#192e38');}
 /** Resolve room metadata from a run without changing scenery between portals. */
 export function sectorFor(run){
   const id=sectorId(run);
   const data={crew:['PERSONNEL DECK','UNPAID EVACUATION','#29434c'],canteen:['MESS HALL','LUNCH HAS ESCAPED','#39483f'],lab:['BIO LAB','ETHICS PENDING','#263f43'],machine:['COMPLIANCE CORE','INDIVIDUALITY ARCHIVED','#18332e'],organic:['GUT TRANSIT','MIND THE SALIVA','#433447'],void:['POCKET DIMENSION','GEOMETRY OPTIONAL','#2c344c'],aquarium:['PELAGIC ANNEX','THE FISH HAVE TENURE','#233e49'],scrapyard:['WARRANTY MOON','ALL SALES FINAL','#443b36']}[id];
-  return {id,name:data[0],caption:data[1],color:data[2]};
+  return {id,name:tr(data[0]),caption:tr(data[1]),color:data[2]};
 }
 /** Draw cached walking/flying poses; travel is world distance and time is seconds. */
 export function drawCrew(c,x,y,thrust,scale,vy,time,weapon='ion',grounded=false,travel=0){
@@ -260,7 +261,7 @@ export function drawGear(c,gear){
   }else if(kind==='beam'){
     r(c,x-20,y-8,33,16,'#7d7565');r(c,x+12,y-13,9,26,color);r(c,x+21,y-5,5,10,'#f8e4b1');
   }else{r(c,x-15,y-5,30,7,color);r(c,x-8,y+2,5,8,'#a7c19c');}
-  c.textAlign='center';txt(c,weapon.name+(weapon.ammo?` · ${weapon.ammo}`:''),x,y-33,10,color);c.textAlign='left';
+  c.textAlign='center';txt(c,tr(weapon.name)+(weapon.ammo?` · ${weapon.ammo}`:''),x,y-33,10,color);c.textAlign='left';
 }
 
 function drawAnnex(c,W,scroll,time){
