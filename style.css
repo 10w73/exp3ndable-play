@@ -146,7 +146,6 @@
 .pause-card .crew-chat{gap:10px;margin-bottom:24px}
 .pause-card .crew-chat .crew-line p{font-size:12px;line-height:1.6}
 .pause-card .primary-button{width:100%;min-width:0}
-#pause-restart{grid-column:1/-1}
 .overlay:has(>.pause-card:not([hidden])){padding-top:calc(var(--safe-top) + 96px);padding-bottom:calc(var(--safe-bottom) + 24px)}
 .game-frame[data-mode="paused"]:not(.tutorial-open) :is(.thumb-deck,.gear-status,.sector-label){display:none}
 /* Short landscape uses the free width; no menu needs a scrolling container. */
