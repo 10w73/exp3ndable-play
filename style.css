@@ -130,3 +130,48 @@
  .tutorial-open:has(.tutorial-card.practicing) .overlay{justify-content:flex-start;padding-top:calc(var(--safe-top) + 8px);z-index:5}
  .tutorial-card.practicing{width:min(420px,calc(100% - 112px))}
 }
+
+/* Compact native menu controls share geometry without changing the HUD. */
+.end-links{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin-top:12px}
+.end-links .text-button,.intro-options .text-button,.difficulty-choice label>span{width:100%;min-width:0;min-height:40px;padding:8px 10px;border:1px solid #647b70;border-radius:4px;background:#13262e;color:#c3d0ca;font:13px/1.25 Arial,Helvetica,sans-serif}
+.end-links .text-button:hover,.intro-options .text-button:hover{color:var(--ink);background:#263a31}
+.difficulty-choice{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+.difficulty-choice label>span{display:flex;align-items:center;justify-content:center}
+.difficulty-choice input:checked+span{color:#edf0df;background:#314333;border-color:#a3b681}
+.intro-options{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
+.intro-options .language-choice{grid-column:span 2;margin:0}
+:is(.intro,.pause-card,.end-card,.records-card) .primary-button{min-height:44px;padding:12px 16px;border-radius:4px;font-size:14px}
+.pause-card{width:min(100%,400px)}
+.pause-card h2{margin:0 0 20px}
+.pause-card .crew-chat{gap:10px;margin-bottom:24px}
+.pause-card .crew-chat .crew-line p{font-size:12px;line-height:1.6}
+.pause-card .primary-button{width:100%;min-width:0}
+#pause-restart{grid-column:1/-1}
+.overlay:has(>.pause-card:not([hidden])){padding-top:calc(var(--safe-top) + 96px);padding-bottom:calc(var(--safe-bottom) + 24px)}
+.game-frame[data-mode="paused"]:not(.tutorial-open) :is(.thumb-deck,.gear-status,.sector-label){display:none}
+/* Short landscape uses the free width; no menu needs a scrolling container. */
+@media(max-height:500px) and (orientation:landscape){
+ .pause-card{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px 24px;width:min(100%,760px);max-width:760px;align-items:start}
+ .pause-card h2{grid-column:1;grid-row:1;margin:0}
+ .pause-card .crew-chat{display:none}
+ .pause-card .portal-guide{grid-column:1;grid-row:2;margin:0}
+ .pause-card #resume{grid-column:1;grid-row:3}
+ .pause-card .end-links{grid-column:2;grid-row:1/5;grid-template-columns:1fr;align-self:center;margin:0}
+ .pause-card .language-choice{grid-column:1;grid-row:4;margin:0}
+ .overlay:has(>.pause-card:not([hidden])){padding-top:calc(var(--safe-top) + 84px);padding-bottom:calc(var(--safe-bottom) + 16px)}
+}
+/* Optional banter yields to controls only on the shortest screens. */
+@media(max-height:520px) and (orientation:portrait),(max-height:350px){
+ .intro .crew-chat,.pause-card .crew-chat{display:none}
+}
+/* Both translated Fly captions fit inside the original pad dimensions. */
+.thrust-pad{align-content:center;gap:2px;padding:6px 8px}
+.thrust-pad small{line-height:1.1}
+@media(max-height:500px) and (orientation:landscape){.thrust-pad{gap:1px;padding:4px 8px}}
+
+/* Keep the complete records screen usable when a phone keyboard shortens it. */
+@media(max-height:350px){
+ .records-card #pilot-form{display:grid;grid-template-columns:auto minmax(0,1fr);align-items:center;gap:8px}
+ .records-card #pilot-form>label{margin:0}
+ .records-card .primary-button{min-height:40px;padding:8px 12px;font-size:13px}
+}
