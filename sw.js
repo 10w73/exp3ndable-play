@@ -1,4 +1,4 @@
-const CACHE = 'exp3ndable-v38';
+const CACHE = 'exp3ndable-v39';
 const FILES = ['./', './index.html', './style.css', './game.js', './renderer.js', './engine.js', './difficulty.js', './arsenal.js', './creatures.js', './creature-art.js', './audio.js', './fx.js', './records.js', './checkpoint.js', './dialogue.js', './art.js', './workplace-art.js', './language.js', './tutorial.js', './tutorial-view.js', './icon.svg', './apple-touch-icon.png', './icon-192.png', './icon-512.png', './manifest.webmanifest', './manifest.de.webmanifest'];
 self.addEventListener('install', event => {
   event.waitUntil((async()=>{
